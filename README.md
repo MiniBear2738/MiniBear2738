@@ -19,14 +19,23 @@ python3 -m http.server
   too). **Click a villager** to say hi, or **hover** one to see their name
   and what they're up to.
 - **Place buildings** from the bottom toolbar: houses raise the population
-  cap, lumber camps and quarries speed up gathering, and farms 🌾 grow food.
-  Villagers walk over and construct the site.
+  cap, lumber camps and quarries speed up gathering, farms 🌾 grow food, and
+  campfires 🔥 give villagers somewhere to rest. Villagers walk over and build.
 - **Food** is eaten a little each day. If the larder empties, villagers don't
-  starve — they just turn hungry and slow, so keep a farm or two running.
-- **Plant trees & rocks** anywhere, and **click-drag** to paint whole
-  forests. Drag a **path** 🛤️ (1 🪨 per tile) for a 20% villager speed boost.
-- **Professions**: chop or mine enough and a villager becomes a 🪓 Lumberjack
-  or ⛏️ Miner — they dress the part and work their trade 40% faster.
+  starve — they just turn hungry and slow. Build farms and villagers will tend
+  them for extra food.
+- **Night & rest**: when it gets dark villagers down tools and gather at a
+  campfire or house to sleep, then rush back out at dawn.
+- **Professions**: chop, mine or farm enough and a villager becomes a 🪓
+  Lumberjack, ⛏️ Miner or 🌾 Farmer — dressing the part and working 40% faster.
+- **Plant trees & rocks**, paint **paths** 🛤️ (1 🪨, +20% speed), and scatter
+  **decor** — 🚧 fences, 🌷 flowers, 🏮 lanterns that glow at night.
+  **Click-drag** any of these like a brush.
+- **🎈 A traveling merchant** visits every 7 days — click the balloon to swap
+  surplus wood, stone and food before it drifts away (handy in a slow winter).
+- **🏛️ The Grand Monument** (200 🪵 200 🪨) takes days of crewed work, but
+  finishing it **wins the game** with a permanent fireworks celebration — then
+  play on as long as you like.
 - **Seasons** drift past — 🌸 spring, ☀️ summer, 🍂 autumn, ❄️ winter —
   recolouring the world. Crops race in summer; nature regrows slowly under
   winter snow.
@@ -35,19 +44,20 @@ python3 -m http.server
 - **Events** roll in periodically: 🌧️ rain slows gathering but regrows
   depleted nature fast, 🌾 harvest speeds gathering up, 🎊 celebrations make
   villagers move quicker.
-- Day and night drift by, birds cross the sky and rabbits hop through the
-  grass (scattering when a villager wanders near) — watch the house windows
-  glow and the fireflies come out after dark.
+- Birds cross the sky, butterflies flit in warm seasons and rabbits hop
+  through the grass (scattering when a villager wanders near) — watch the
+  windows and lanterns glow and the fireflies come out after dark.
 
-Keys: `H`/`L`/`Q`/`F` buildings · `T`/`R`/`P` nature & paths ·
-`Esc`/right-click cancel · `Space` pause · `1`/`2`/`3` speed · `A` auto-grow ·
-`M` mute · `?` help.
+Keys: `H`/`L`/`Q` houses & gathering · `F`/`C`/`G` farm / campfire / monument ·
+`T`/`R`/`P` tree / rock / path · `Esc`/right-click cancel · `Space` pause ·
+`1`/`2`/`3` speed · `A` auto-grow · `M` mute · `?` help.
 
 ## Test
 
-A headless smoke test stubs the DOM/canvas and drives the real game loop
-for ~10 minutes of game time, checking that villagers gather, build, and
-never get stuck:
+A headless smoke test stubs the DOM/canvas and drives the real game loop,
+running 64 checks across the whole simulation — gathering, building, food &
+farms, professions, paths, seasons, day/night rest, the merchant, decor, and
+winning via the monument:
 
 ```sh
 node test/smoke.mjs

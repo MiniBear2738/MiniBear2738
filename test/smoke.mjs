@@ -235,6 +235,109 @@ check("path tool selected", TK.placement && TK.placement.type === "path");
     check("later it's Winter", TK.season === "Winter", TK.season);
 }
 
+// night & rest: villagers sleep when it's dark, wake at dawn
+{
+    TK.reset();
+    TK.time = 96; frames(2);                       // dayT 0.8 → night
+    check("night falls in the evening", TK.isNight === true);
+    TK.speed = 2;
+    for (let i = 0; i < 12; i++) { TK.time = 96; frames(20); }   // keep it night
+    check("villagers head to rest at night",
+        TK.villagers.some(v => v.state === "Resting" || v.state === "GoRest"));
+    TK.time = 30; frames(8);                        // dayT 0.25 → day
+    check("dawn is daytime again", TK.isNight === false);
+    TK.speed = 1;
+    frames(30);
+    check("villagers stop resting by day", TK.villagers.every(v => v.state !== "Resting"));
+}
+
+// Farmer profession from tending farms
+{
+    const fv = TK.villagers[0];
+    fv.job = null; fv.woodXP = 0; fv.stoneXP = 0; fv.farmXP = 0;
+    for (let i = 0; i < 6; i++) fv.gainXP("farm");
+    check("6 farm harvests make a Farmer", fv.job === "Farmer", `job=${fv.job}`);
+    check("Farmer tends 40% faster", fv.jobMult("farm") < 1 && fv.jobMult("tree") === 1);
+}
+
+// campfire builds and gives villagers a rest spot
+{
+    TK.reset();
+    TK.resources.wood = 60; TK.resources.stone = 60;
+    document.getElementById("buildCampfireBtn").onclick();
+    const before = TK.buildings.length;
+    outer: for (let y = 250; y < 560; y += 50) {
+        for (let x = 340; x < 1180; x += 50) { fireClick(x, y); if (TK.buildings.length > before) break outer; }
+    }
+    check("campfire site placed", TK.buildings.some(b => b.type === "campfire"));
+    fireKey("Escape");
+}
+
+// traveling merchant arrives and trades
+{
+    TK.reset();
+    TK.spawnMerchant();
+    check("merchant appears", !!TK.merchant);
+    TK.openMerchant();
+    check("merchant panel opens", document.getElementById("merchantPanel").classList.contains("open"));
+    TK.resources.wood = 50; TK.resources.stone = 5; TK.resources.food = 0;
+    const t = TK.trades[0];                         // 10 wood -> 6 stone
+    const w0 = TK.resources.wood, s0 = TK.resources.stone;
+    TK.doTrade(t);
+    check("trading swaps resources",
+        TK.resources.wood === w0 - 10 && TK.resources.stone === s0 + 6,
+        `wood ${w0}->${TK.resources.wood}, stone ${s0}->${TK.resources.stone}`);
+    TK.merchant.depart();
+    check("merchant departs on demand", TK.merchant.leaving === true);
+    check("departing closes the panel", !document.getElementById("merchantPanel").classList.contains("open"));
+    TK.merchant.x = innerWidth + 200; frames(2);
+    check("merchant eventually leaves", TK.merchant === null);
+}
+
+// decor: drag-painting fences/flowers/lanterns
+{
+    TK.reset();
+    TK.resources.wood = 60;
+    document.getElementById("fenceBtn").onclick();
+    check("fence tool selected", TK.placement && TK.placement.type === "fence");
+    const before = TK.props.length, wood0 = TK.resources.wood;
+    fireDrag([[120, 300], [120, 620]]);
+    check("dragging places decor props", TK.props.length - before >= 3, `added ${TK.props.length - before}`);
+    check("decor costs wood", TK.resources.wood < wood0);
+    fireKey("Escape");
+    document.getElementById("lanternBtn").onclick();
+    const lp = TK.props.length;
+    fireClick(900, 300);
+    check("lantern placed", TK.props.some(p => p.type === "lantern") && TK.props.length === lp + 1);
+    fireKey("Escape");
+}
+
+// the Grand Monument: build it to win
+{
+    TK.reset();
+    if (TK.autoGrow) document.getElementById("autoBtn").onclick();   // keep crews on the monument
+    TK.resources.wood = 300; TK.resources.stone = 300;
+    document.getElementById("buildMonumentBtn").onclick();
+    const before = TK.buildings.length;
+    outer: for (let y = 260; y < 560; y += 50) {
+        for (let x = 360; x < 1150; x += 50) { fireClick(x, y); if (TK.buildings.length > before) break outer; }
+    }
+    const mon = TK.buildings.find(b => b.type === "monument");
+    check("monument site placed", !!mon && !mon.complete);
+    check("monument is a unique build", !TK.placeBuilding("monument", 700, 400));
+    fireKey("Escape");
+    if (mon) {
+        mon.progress = 0.9;                          // skip most of the multi-day build
+        TK.speed = 2;
+        for (let i = 0; i < 18 && !TK.won; i++) { TK.time = 24; frames(40); } // keep daytime
+        check("finishing the monument wins the game", TK.won === true);
+        check("victory banner shows", document.getElementById("winBanner").classList.contains("show"));
+        check("celebration becomes permanent (fireworks)", TK.event !== undefined && TK.won);
+    } else {
+        check("finishing the monument wins the game", false, "no monument placed");
+    }
+}
+
 // pause / unpause
 TK.reset();
 document.getElementById("pauseBtn").onclick();
@@ -251,7 +354,8 @@ document.getElementById("pauseBtn").onclick();
 document.getElementById("resetBtn").onclick();
 document.getElementById("resetBtn").onclick();
 check("double-click reset restarts the kingdom",
-    TK.time === 0 && TK.villagers.length === 3 && TK.buildings.length === 0 && TK.paths.size === 0);
+    TK.time === 0 && TK.villagers.length === 3 && TK.buildings.length === 0 &&
+    TK.paths.size === 0 && TK.props.length === 0 && TK.merchant === null && TK.won === false);
 
 frames(10);
 check("loop still alive after all interactions", rafQ.length > 0);

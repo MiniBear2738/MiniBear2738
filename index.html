@@ -100,7 +100,10 @@
         transform: translateX(-50%);
         z-index: 10;
         display: flex;
-        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        max-width: min(96vw, 1180px);
         align-items: stretch;
         background: var(--panel-bg);
         border-radius: 16px;
@@ -112,14 +115,14 @@
     }
     @keyframes rise { from { transform: translate(-50%, 80px); opacity: 0; } }
     .tool {
-        display: flex; flex-direction: column; align-items: center; gap: 2px;
-        min-width: 76px; padding: 7px 10px 6px;
+        display: flex; flex-direction: column; align-items: center; gap: 1px;
+        min-width: 64px; padding: 6px 8px 5px;
         background: #f6f7fa;
         position: relative;
     }
-    .tool .ticon { font-size: 22px; line-height: 1.1; pointer-events: none; }
-    .tool .tlabel { font-size: 11px; font-weight: 800; color: #3a3f52; pointer-events: none; }
-    .tool .tcost { font-size: 10.5px; font-weight: 700; color: #8a8f9f; pointer-events: none; }
+    .tool .ticon { font-size: 20px; line-height: 1.1; pointer-events: none; }
+    .tool .tlabel { font-size: 10.5px; font-weight: 800; color: #3a3f52; pointer-events: none; }
+    .tool .tcost { font-size: 9.5px; font-weight: 700; color: #8a8f9f; pointer-events: none; white-space: nowrap; }
     .tool kbd {
         position: absolute; top: 3px; right: 5px;
         font-size: 9px; font-family: inherit; font-weight: 800;
@@ -130,6 +133,56 @@
     .tool.unafford { opacity: 0.45; filter: grayscale(0.7); }
     .tool.unafford:hover { transform: none; box-shadow: none; background: #f6f7fa; }
     .tb-divider { width: 1px; background: rgba(0,0,0,0.1); margin: 4px 2px; }
+
+    /* ---------- merchant trade panel ---------- */
+    #merchantPanel {
+        position: absolute;
+        left: 50%; top: 92px;
+        transform: translate(-50%, -8px);
+        z-index: 12;
+        width: 300px;
+        background: linear-gradient(165deg, #fff8ec, #ffeccb);
+        border-radius: 16px;
+        padding: 14px 16px;
+        box-shadow: 0 18px 44px rgba(60,40,10,0.3), inset 0 1px 0 rgba(255,255,255,0.8);
+        border: 1px solid rgba(180,140,60,0.4);
+        color: #6b4f1d;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.2s, transform 0.2s cubic-bezier(0.2,1.4,0.4,1);
+    }
+    #merchantPanel.open { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+    #merchantHead { font-weight: 800; font-size: 15px; margin-bottom: 2px; }
+    #merchantLeaves { font-weight: 700; font-size: 11px; color: #b07a2a; }
+    #merchantTrades { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 8px; }
+    .trade {
+        display: flex; align-items: center; justify-content: space-between;
+        background: rgba(255,255,255,0.7); border: 1px solid rgba(180,140,60,0.35);
+        border-radius: 10px; padding: 7px 10px; font-weight: 800; font-size: 13px; color: #6b4f1d;
+        width: 100%;
+    }
+    .trade:hover { background: #fff; }
+    .trade.unafford { opacity: 0.4; }
+    .trade .arrow { color: #c08a2a; }
+    #merchantHint { font-size: 11px; font-weight: 600; color: #9a7836; }
+
+    /* ---------- victory banner ---------- */
+    #winBanner {
+        position: absolute;
+        left: 50%; top: 38%;
+        transform: translate(-50%, -50%) scale(0.8);
+        z-index: 19;
+        text-align: center;
+        background: linear-gradient(160deg, rgba(255,250,235,0.97), rgba(255,228,170,0.97));
+        border-radius: 20px;
+        padding: 22px 40px;
+        box-shadow: 0 24px 60px rgba(80,50,10,0.4);
+        border: 2px solid rgba(220,180,90,0.6);
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.5s, transform 0.5s cubic-bezier(0.2,1.5,0.4,1);
+    }
+    #winBanner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    #winText { display: block; font-size: 26px; font-weight: 900; color: #8a5b16; }
+    #winSub { display: block; font-size: 14px; font-weight: 700; color: #a9803a; margin-top: 6px; }
 
     /* ---------- toasts ---------- */
     #messages {
@@ -240,13 +293,27 @@
     <button class="tool" id="buildLumberBtn"><kbd>L</kbd><span class="ticon">🪓</span><span class="tlabel">Lumber Camp</span><span class="tcost">10🪵 5🪨 · +wood</span></button>
     <button class="tool" id="buildQuarryBtn"><kbd>Q</kbd><span class="ticon">⛏️</span><span class="tlabel">Quarry</span><span class="tcost">10🪨 · +stone</span></button>
     <button class="tool" id="buildFarmBtn"><kbd>F</kbd><span class="ticon">🌾</span><span class="tlabel">Farm</span><span class="tcost">12🪵 · +food</span></button>
+    <button class="tool" id="buildCampfireBtn"><kbd>C</kbd><span class="ticon">🔥</span><span class="tlabel">Campfire</span><span class="tcost">5🪵 5🪨 · rest</span></button>
+    <button class="tool" id="buildMonumentBtn"><kbd>G</kbd><span class="ticon">🏛️</span><span class="tlabel">Monument</span><span class="tcost">200🪵 200🪨 · 🏆</span></button>
     <span class="tb-divider"></span>
-    <button class="tool" id="treeBtn"><kbd>T</kbd><span class="ticon">🌳</span><span class="tlabel">Plant Tree</span><span class="tcost">free</span></button>
-    <button class="tool" id="rockBtn"><kbd>R</kbd><span class="ticon">🪨</span><span class="tlabel">Place Rock</span><span class="tcost">free</span></button>
-    <button class="tool" id="pathBtn"><kbd>P</kbd><span class="ticon">🛤️</span><span class="tlabel">Path</span><span class="tcost">1🪨 · +20% speed</span></button>
+    <button class="tool" id="treeBtn"><kbd>T</kbd><span class="ticon">🌳</span><span class="tlabel">Tree</span><span class="tcost">free</span></button>
+    <button class="tool" id="rockBtn"><kbd>R</kbd><span class="ticon">🪨</span><span class="tlabel">Rock</span><span class="tcost">free</span></button>
+    <button class="tool" id="pathBtn"><kbd>P</kbd><span class="ticon">🛤️</span><span class="tlabel">Path</span><span class="tcost">1🪨 · speed</span></button>
+    <span class="tb-divider"></span>
+    <button class="tool" id="fenceBtn"><span class="ticon">🚧</span><span class="tlabel">Fence</span><span class="tcost">1🪵 · decor</span></button>
+    <button class="tool" id="flowerBtn"><span class="ticon">🌷</span><span class="tlabel">Flowers</span><span class="tcost">1🪵 · decor</span></button>
+    <button class="tool" id="lanternBtn"><span class="ticon">🏮</span><span class="tlabel">Lantern</span><span class="tcost">2🪵 · glows</span></button>
     <span class="tb-divider"></span>
     <button class="tool active" id="autoBtn" title="Villagers plan new buildings on their own"><kbd>A</kbd><span class="ticon">🤖</span><span class="tlabel">Auto-grow</span><span class="tcost">on</span></button>
 </div>
+
+<div id="merchantPanel">
+    <div id="merchantHead">🎈 Traveling Merchant <span id="merchantLeaves"></span></div>
+    <div id="merchantTrades"></div>
+    <div id="merchantHint">Trade away your surplus before the balloon drifts off!</div>
+</div>
+
+<div id="winBanner"><span id="winText">🏆 The Grand Monument is complete!</span><span id="winSub">Your kingdom will be celebrated for all time. Play on!</span></div>
 
 <div id="messages"></div>
 
@@ -259,23 +326,24 @@
         <ul>
             <li><b>Click trees & rocks</b> to gather a resource yourself, or <b>click a villager</b> to say hi. <b>Hover a villager</b> to see their name and what they're up to.</li>
             <li><b>Pick a building</b> from the toolbar, then click the ground to place a construction site — villagers will build it.</li>
-            <li><b>Houses</b> raise the population cap; <b>lumber camps / quarries</b> speed up gathering; <b>farms</b> 🌾 grow food.</li>
-            <li><b>Food</b> is eaten a little each day. If it runs out villagers don't starve — they just get hungry and slow, so keep a farm or two going.</li>
-            <li><b>Plant trees & rocks</b> anywhere, and <b>click-drag</b> to paint whole forests. Drag a <b>path</b> 🛤️ (1🪨 each) to give villagers a 20% speed boost.</li>
-            <li><b>Villagers specialise</b>: chop or mine enough and they become a 🪓 Lumberjack or ⛏️ Miner, working their trade 40% faster.</li>
+            <li><b>Houses</b> raise the population cap; <b>lumber camps / quarries</b> speed gathering; <b>farms</b> 🌾 grow food; <b>campfires</b> 🔥 give villagers somewhere to rest.</li>
+            <li><b>Food</b> is eaten a little each day. If it runs out villagers don't starve — they just get hungry and slow. Build farms, and villagers will tend them for extra food.</li>
+            <li><b>Night & rest</b>: when it gets dark villagers down tools and gather at a campfire or house to sleep, then rush back out at dawn.</li>
+            <li><b>Villagers specialise</b>: chop, mine or farm enough and they become a 🪓 Lumberjack, ⛏️ Miner or 🌾 Farmer — dressing the part and working 40% faster.</li>
+            <li><b>Plant trees & rocks</b>, paint <b>paths</b> 🛤️ (1🪨, +20% speed), and scatter <b>decor</b> — 🚧 fences, 🌷 flowers and 🏮 lanterns that glow at night. <b>Click-drag</b> any of these like a brush.</li>
+            <li><b>🎈 A traveling merchant</b> visits every 7 days — click the balloon to swap surplus wood, stone and food before it drifts away.</li>
+            <li><b>🏛️ The Grand Monument</b> (200🪵 200🪨) takes days of work, but finishing it wins the game with a permanent celebration — then play on as long as you like.</li>
             <li><b>Seasons</b> drift by — 🌸 spring, ☀️ summer, 🍂 autumn, ❄️ winter — recolouring the world. Crops race in summer; nature regrows slowly under snow.</li>
             <li><b>Auto-grow</b> lets villagers plan and fund new buildings themselves — turn it off for full control.</li>
-            <li>Watch for <b>events</b>: 🌧️ rain slows gathering but regrows nature fast, 🌾 harvest speeds gathering, 🎊 celebrations make villagers quick.</li>
         </ul>
         <h3>Keys</h3>
         <div class="keys">
-            <kbd>H / L / Q / F</kbd><span>House / lumber camp / quarry / farm</span>
-            <kbd>T / R / P</kbd><span>Plant tree / place rock / paint path</span>
+            <kbd>H / L / Q</kbd><span>House / lumber camp / quarry</span>
+            <kbd>F / C / G</kbd><span>Farm / campfire / grand monument</span>
+            <kbd>T / R / P</kbd><span>Tree / rock / path</span>
             <kbd>Esc / right-click</kbd><span>Cancel placement</span>
-            <kbd>Space</kbd><span>Pause</span>
-            <kbd>1 / 2 / 3</kbd><span>Game speed 1x / 2x / 4x</span>
-            <kbd>A</kbd><span>Toggle auto-grow</span>
-            <kbd>M</kbd><span>Mute</span>
+            <kbd>Space · 1 / 2 / 3</kbd><span>Pause · speed 1x / 2x / 4x</span>
+            <kbd>A · M</kbd><span>Auto-grow · mute</span>
         </div>
     </div>
 </div>
@@ -294,7 +362,9 @@ const msgContainer = document.getElementById("messages");
 const ui = {};
 for (const id of ["wood","stone","food","pop","cap","popBar","day","eventIcon","eventName","eventDesc","eventBar",
                   "pauseBtn","speed1","speed2","speed4","soundBtn","helpBtn","resetBtn",
-                  "buildHouseBtn","buildLumberBtn","buildQuarryBtn","buildFarmBtn","treeBtn","rockBtn","pathBtn","autoBtn",
+                  "buildHouseBtn","buildLumberBtn","buildQuarryBtn","buildFarmBtn","buildCampfireBtn","buildMonumentBtn",
+                  "treeBtn","rockBtn","pathBtn","fenceBtn","flowerBtn","lanternBtn","autoBtn",
+                  "merchantPanel","merchantLeaves","merchantTrades","winBanner",
                   "helpOverlay","helpClose"]) {
     ui[id] = document.getElementById(id);
 }
@@ -369,6 +439,9 @@ const SFX = {
     error()   { tone(180, 120, 0.13, "square", 0.2); },
     click()   { tone(1800, 1400, 0.04, "sine", 0.15); },
     jump()    { tone(300, 900, 0.14, "sine", 0.3); },
+    trade()   { tone(700, 1050, 0.08, "triangle", 0.3); tone(1050, 1400, 0.1, "triangle", 0.25, 0.07); },
+    firework(){ noiseBurst(0.18, 0.25, 1600); tone(900, 200, 0.25, "triangle", 0.2); },
+    win()     { [523,659,784,1047].forEach((f,i)=>tone(f,f,0.22,"triangle",0.34,i*0.12)); },
 };
 
 function sfx(name, minGap) {
@@ -384,11 +457,11 @@ function sfx(name, minGap) {
 //  GAME STATE
 // ================================================================
 let villagers = [], resourcesNodes = [], buildings = [], floating = [], particles = [];
-let birds = [], critters = [], butterflies = [];
+let birds = [], critters = [], butterflies = [], props = [];
 let resources = { wood: 20, stone: 10, food: 12 };
 let popCap = 5;
 let speed = 1, lastSpeed = 1;
-let placement = null;            // null | {kind:"nature"|"build"|"path", type:string}
+let placement = null;            // null | {kind:"nature"|"build"|"path"|"decor", type:string}
 let mouse = { x: -999, y: -999, inside: false };
 let hoverNode = null, hoverVillager = null;
 let gameTime = 0, vtime = 0;     // scaled game time / unscaled visual time
@@ -397,11 +470,28 @@ let autoGrow = true;
 let storageWobble = 0;
 let capHintShown = false;
 let hungry = false;
+let isNight = false;             // villagers rest at night
+let won = false, fireworkTimer = 0;
+let nightGlow = 0;               // 0..1 darkness, drives lantern/campfire light
+function lanternGlow() { return nightGlow; }
 
 const storage = { x: 150, y: 300 };
 const POP_INTERVAL = 20, AUTO_INTERVAL = 18, DAY_LEN = 120;
 const FOOD_PER_DAY = 1;          // food eaten per villager per in-game day
 const FARM_YIELD = 3;            // food produced each time a crop ripens
+const FARM_HARVEST = 1.6;        // food a villager hand-harvests from a farm
+const MERCHANT_EVERY = 7;        // a merchant visits every N days
+
+// ---- traveling merchant ----
+let merchant = null;             // {x, y, vy, phase, timer, leaving} | null
+let merchantOpen = false;
+let nextMerchantDay = MERCHANT_EVERY;
+const TRADES = [
+    { give: { wood: 10 }, get: { stone: 6 } },
+    { give: { stone: 10 }, get: { wood: 6 } },
+    { give: { wood: 8 }, get: { food: 6 } },
+    { give: { stone: 8 }, get: { food: 6 } },
+];
 
 // ---- paths: a grid of dirt tiles that speed villagers up ----
 const PATH_CELL = 24;
@@ -434,6 +524,7 @@ const IDLE_THOUGHTS = ["daydreaming about rocks", "humming a tune", "watching th
 const PROFESSIONS = {
     Lumberjack: { res: "wood", shirt: "#7a3b2e", icon: "🪓" },
     Miner:      { res: "stone", shirt: "#5b6470", icon: "⛏️" },
+    Farmer:     { res: "food", shirt: "#6d8c3a", icon: "🌾" },
 };
 const JOB_THRESHOLD = 6;         // successful harvests before a villager specialises
 
@@ -449,10 +540,19 @@ const EVENTS = {
 };
 
 const BUILDS = {
-    house:  { label: "House",       icon: "🏠", cost: { wood: 10 },           btn: "buildHouseBtn" },
-    lumber: { label: "Lumber Camp", icon: "🪓", cost: { wood: 10, stone: 5 }, btn: "buildLumberBtn" },
-    quarry: { label: "Quarry",      icon: "⛏️", cost: { stone: 10 },          btn: "buildQuarryBtn" },
-    farm:   { label: "Farm",        icon: "🌾", cost: { wood: 12 },           btn: "buildFarmBtn" },
+    house:    { label: "House",       icon: "🏠", cost: { wood: 10 },             btn: "buildHouseBtn" },
+    lumber:   { label: "Lumber Camp", icon: "🪓", cost: { wood: 10, stone: 5 },   btn: "buildLumberBtn" },
+    quarry:   { label: "Quarry",      icon: "⛏️", cost: { stone: 10 },            btn: "buildQuarryBtn" },
+    farm:     { label: "Farm",        icon: "🌾", cost: { wood: 12 },             btn: "buildFarmBtn" },
+    campfire: { label: "Campfire",    icon: "🔥", cost: { wood: 5, stone: 5 },    btn: "buildCampfireBtn" },
+    monument: { label: "Monument",    icon: "🏛️", cost: { wood: 200, stone: 200 }, btn: "buildMonumentBtn", buildSpeed: 0.0016, crew: 6, unique: true },
+};
+
+// purely cosmetic props the player can scatter about
+const DECOR = {
+    fence:   { label: "Fence",   icon: "🚧", cost: { wood: 1 }, btn: "fenceBtn" },
+    flower:  { label: "Flowers", icon: "🌷", cost: { wood: 1 }, btn: "flowerBtn" },
+    lantern: { label: "Lantern", icon: "🏮", cost: { wood: 2 }, btn: "lanternBtn" },
 };
 
 function afford(cost) { return Object.entries(cost).every(([k, v]) => resources[k] >= v); }
@@ -716,6 +816,10 @@ class Building {
         this.roof = pick(["#c75c4e", "#b85546", "#cf6a5c", "#9a6fb8"]);
         this.crop = 0.12;               // farms: 0..1 ripeness
         this.cropPhase = rand(0, 6.3);
+        this.flameSeed = rand(0, 6.3);  // campfire flicker
+        const info = BUILDS[type] || {};
+        this.buildSpeed = info.buildSpeed || 1;   // monument builds far slower
+        this.crewCap = info.crew || 3;
     }
     update(dt) {
         if (this.popT > 0) this.popT -= dt * 2.2;
@@ -725,6 +829,13 @@ class Building {
             if (this.smokeTimer <= 0) {
                 this.smokeTimer = rand(1.6, 3.4);
                 spawnChips(this.x + 13, this.y - 46, "#d3d8de", "smoke", 1);
+            }
+        } else if (this.type === "campfire") {
+            this.smokeTimer -= dt;
+            if (this.smokeTimer <= 0) {
+                this.smokeTimer = rand(0.6, 1.4);
+                spawnChips(this.x + rand(-2, 2), this.y - 16, "#d3d8de", "smoke", 1);
+                if (Math.random() < 0.5) spawnChips(this.x + rand(-3, 3), this.y - 12, pick(["#ff9d3f", "#ffd166"]), "spark", 1);
             }
         } else if (this.type === "farm") {
             // crops grow over time; faster in summer, barely at all in winter
@@ -797,6 +908,56 @@ class Building {
             // little fence post + sign
             ctx.strokeStyle = "#6e4a26"; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.moveTo(-24, 2); ctx.lineTo(-24, -8); ctx.moveTo(24, 2); ctx.lineTo(24, -8); ctx.stroke();
+        } else if (this.type === "campfire") {
+            // ring of stones
+            ctx.fillStyle = "#9aa0aa";
+            for (let i = 0; i < 7; i++) {
+                const a = i / 7 * Math.PI * 2;
+                ctx.beginPath(); ctx.ellipse(Math.cos(a) * 15, Math.sin(a) * 7, 4, 3, 0, 0, Math.PI * 2); ctx.fill();
+            }
+            // crossed logs
+            ctx.strokeStyle = "#6e4521"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(-9, -2); ctx.lineTo(9, -7); ctx.moveTo(-9, -7); ctx.lineTo(9, -2); ctx.stroke();
+            // flame (flickers via vtime)
+            const fl = 0.78 + Math.sin(vtime * 9 + this.flameSeed) * 0.16 + Math.sin(vtime * 15) * 0.08;
+            ctx.fillStyle = "#ff7a2e";
+            ctx.beginPath();
+            ctx.moveTo(0, -22 * fl); ctx.quadraticCurveTo(8, -10, 0, -5); ctx.quadraticCurveTo(-8, -10, 0, -22 * fl); ctx.fill();
+            ctx.fillStyle = "#ffd45e";
+            ctx.beginPath();
+            ctx.moveTo(0, -15 * fl); ctx.quadraticCurveTo(4, -8, 0, -5); ctx.quadraticCurveTo(-4, -8, 0, -15 * fl); ctx.fill();
+        } else if (this.type === "monument") {
+            // tiered stone plinth
+            ctx.fillStyle = "#b9b2a0";
+            ctx.beginPath(); ctx.roundRect(-32, -16, 64, 18, 3); ctx.fill();
+            ctx.fillStyle = "#ccc6b6";
+            ctx.beginPath(); ctx.roundRect(-25, -26, 50, 12, 3); ctx.fill();
+            ctx.fillStyle = "#d8d2c2";
+            ctx.beginPath(); ctx.roundRect(-17, -34, 34, 10, 2); ctx.fill();
+            // tapering obelisk
+            ctx.fillStyle = "#e6e0cf";
+            ctx.beginPath();
+            ctx.moveTo(-11, -34); ctx.lineTo(-6, -78); ctx.lineTo(6, -78); ctx.lineTo(11, -34);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = "rgba(120,110,90,0.25)";       // shaded side
+            ctx.beginPath(); ctx.moveTo(2, -34); ctx.lineTo(6, -78); ctx.lineTo(11, -34); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = "rgba(120,110,90,0.4)"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(-9, -46); ctx.lineTo(9, -46); ctx.moveTo(-7.5, -60); ctx.lineTo(7.5, -60); ctx.stroke();
+            // golden pyramidion
+            ctx.fillStyle = "#f4d35e";
+            ctx.beginPath(); ctx.moveTo(-6, -78); ctx.lineTo(0, -92); ctx.lineTo(6, -78); ctx.closePath(); ctx.fill();
+            if (this.complete) {                            // sparkle + banners
+                ctx.fillStyle = `rgba(255,245,200,${0.5 + 0.5 * Math.sin(vtime * 4)})`;
+                ctx.beginPath(); ctx.arc(0, -90, 2.4, 0, Math.PI * 2); ctx.fill();
+                for (const sgn of [-1, 1]) {
+                    ctx.fillStyle = sgn < 0 ? "#e06666" : "#5b9bd5";
+                    const fy = -30 + Math.sin(vtime * 2 + sgn) * 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(sgn * 17, fy - 12); ctx.lineTo(sgn * 30, fy - 9); ctx.lineTo(sgn * 17, fy - 6); ctx.closePath(); ctx.fill();
+                    ctx.strokeStyle = "#6e4a26"; ctx.lineWidth = 1.2;
+                    ctx.beginPath(); ctx.moveTo(sgn * 17, fy - 12); ctx.lineTo(sgn * 17, fy + 2); ctx.stroke();
+                }
+            }
         } else { // lumber camp
             ctx.fillStyle = "#8b5a2b";                       // shed
             ctx.beginPath(); ctx.roundRect(-21, -18, 30, 19, 2); ctx.fill();
@@ -826,22 +987,27 @@ class Building {
         ctx.scale(1 + squash, 1 - squash);
 
         if (!this.complete) {
+            const tall = this.type === "monument";
+            const scaffH = tall ? 86 : 34;
+            const halfW = tall ? 30 : 24;
+            const barY = tall ? -98 : -48;
             // foundation + scaffold + ghost of the final building
             ctx.fillStyle = "#d8c08a";
-            ctx.beginPath(); ctx.roundRect(-24, -6, 48, 9, 2); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(-halfW, -6, halfW * 2, 9, 2); ctx.fill();
             ctx.strokeStyle = "#a98850"; ctx.lineWidth = 1;
             for (let i = -18; i <= 18; i += 9) { ctx.beginPath(); ctx.moveTo(i, -6); ctx.lineTo(i, 3); ctx.stroke(); }
             this.drawBody(0.22 + 0.45 * this.progress);
             ctx.strokeStyle = "#8a6a3a"; ctx.lineWidth = 2.5;
             ctx.beginPath();
-            ctx.moveTo(-24, 0); ctx.lineTo(-24, -34); ctx.moveTo(24, 0); ctx.lineTo(24, -34);
-            ctx.moveTo(-26, -32); ctx.lineTo(26, -32);
+            ctx.moveTo(-halfW, 0); ctx.lineTo(-halfW, -scaffH); ctx.moveTo(halfW, 0); ctx.lineTo(halfW, -scaffH);
+            ctx.moveTo(-halfW - 2, -scaffH + 2); ctx.lineTo(halfW + 2, -scaffH + 2);
+            if (tall) { ctx.moveTo(-halfW - 2, -44); ctx.lineTo(halfW + 2, -44); }
             ctx.stroke();
             // progress bar
             ctx.fillStyle = "rgba(30,34,44,0.65)";
-            ctx.beginPath(); ctx.roundRect(-17, -48, 34, 7, 3.5); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(-17, barY, 34, 7, 3.5); ctx.fill();
             ctx.fillStyle = "#67d97e";
-            ctx.beginPath(); ctx.roundRect(-15.5, -46.5, 31 * clamp(this.progress, 0, 1), 4, 2); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(-15.5, barY + 1.5, 31 * clamp(this.progress, 0, 1), 4, 2); ctx.fill();
         } else {
             this.drawBody(1);
         }
@@ -859,7 +1025,20 @@ function finishBuilding(b) {
         popCap += 2;
         capHintShown = false;
         floatText(b.x, b.y - 50, "+2 pop cap", "#2c7a43");
+    } else if (b.type === "monument") {
+        triggerWin(b);
     }
+}
+
+function triggerWin(b) {
+    if (won) return;
+    won = true;
+    fireworkTimer = 0;
+    ui.winBanner.classList.add("show");
+    setTimeout(() => ui.winBanner.classList.remove("show"), 7000);
+    notify("🏆 The Grand Monument is complete — your kingdom is legendary!");
+    floatText(b.x, b.y - 100, "🏆 VICTORY!", "#caa12c");
+    sfx("win");
 }
 
 // ================================================================
@@ -936,20 +1115,24 @@ class Villager {
         this.shirt = pick(["#4a86e8", "#e06666", "#6aa84f", "#a64d79", "#e69138", "#45818e"]);
         this.hat = Math.random() < 0.45 ? pick(["#c75c4e", "#5b7c99", "#7a5d3a"]) : null;
         this.thought = pick(IDLE_THOUGHTS);
-        this.woodXP = 0; this.stoneXP = 0;  // experience toward a profession
-        this.job = null;                    // null | "Lumberjack" | "Miner"
+        this.woodXP = 0; this.stoneXP = 0; this.farmXP = 0; // experience toward a profession
+        this.job = null;                    // null | "Lumberjack" | "Miner" | "Farmer"
     }
-    // matching profession gathers its resource 40% faster
+    // matching profession works its specialty 40% faster
     jobMult(type) {
         if (this.job === "Lumberjack" && type === "tree") return 0.6;
         if (this.job === "Miner" && type === "rock") return 0.6;
+        if (this.job === "Farmer" && type === "farm") return 0.6;
         return 1;
     }
     gainXP(type) {
         if (this.job) return;
-        if (type === "tree") this.woodXP++; else this.stoneXP++;
-        if (this.woodXP >= JOB_THRESHOLD || this.stoneXP >= JOB_THRESHOLD) {
-            this.job = this.woodXP >= this.stoneXP ? "Lumberjack" : "Miner";
+        if (type === "tree") this.woodXP++;
+        else if (type === "rock") this.stoneXP++;
+        else this.farmXP++;
+        const best = Math.max(this.woodXP, this.stoneXP, this.farmXP);
+        if (best >= JOB_THRESHOLD) {
+            this.job = this.woodXP === best ? "Lumberjack" : this.stoneXP === best ? "Miner" : "Farmer";
             this.shirt = PROFESSIONS[this.job].shirt;
             floatText(this.x, this.y - 30, this.name + " → " + this.job + "!", "#2c7a43");
             emote(this.x, this.y - 30, PROFESSIONS[this.job].icon);
@@ -961,8 +1144,12 @@ class Villager {
         switch (this.state) {
             case "Gathering": return "chopping wood";
             case "Mining":    return "mining stone";
-            case "Building":  return "building";
+            case "Farming":   return "tending crops";
+            case "Building":  return this.target && this.target.type === "monument" ? "raising the monument" : "building";
             case "Delivering":return "hauling " + (this.carry === "wood" ? "logs" : "stone");
+            case "GoFarm":    return "off to the farm";
+            case "GoRest":    return "heading home to rest";
+            case "Resting":   return "💤 resting";
             case "Walking":   return this.target ? "off to work" : "wandering";
             default:          return hungry ? "hungry…" : this.thought;
         }
@@ -972,12 +1159,64 @@ class Villager {
         const moveBonus = partyAmt > 0.5 ? 1.5 : 1;
         let moving = false;
 
+        // when night falls, down tools and head off to rest (carriers finish
+        // their delivery first so nothing is dropped)
+        if (isNight && !this.carry &&
+            (this.state === "Walking" || this.state === "Gathering" || this.state === "Mining" ||
+             this.state === "Building" || this.state === "GoFarm" || this.state === "Farming")) {
+            this.state = "Idle"; this.timer = 0; this.target = null;
+        }
+
         switch (this.state) {
             case "Idle":
                 this.timer -= dt;
                 if (Math.random() < dt * 0.25) this.thought = pick(IDLE_THOUGHTS);
                 if (this.timer <= 0) { this.chooseTask(); this.timer = rand(0.8, 2.2); }
                 break;
+
+            case "GoRest":
+                moving = this.moveTo(this.dest, moveBonus, dt);
+                if (!moving) this.state = "Resting";
+                break;
+
+            case "Resting":
+                if (!isNight) {
+                    this.state = "Idle"; this.timer = rand(0, 0.5); this.jumpT = 0.7;
+                    emote(this.x, this.y - 28, "☀️");
+                } else if (Math.random() < dt * 0.25) {
+                    emote(this.x, this.y - 24, "💤");
+                }
+                break;
+
+            case "GoFarm":
+                if (!(this.target instanceof Building) || !this.target.complete || this.target.type !== "farm") {
+                    this.target = null; this.state = "Idle"; break;
+                }
+                moving = this.moveTo(this.dest, moveBonus, dt);
+                if (!moving) { this.state = "Farming"; this.timer = 2.4 * this.jobMult("farm") * (hungry ? 1.5 : 1); this.workAnim = 0; }
+                break;
+
+            case "Farming": {
+                const f = this.target;
+                if (!(f instanceof Building) || !f.complete || f.type !== "farm") { this.target = null; this.state = "Idle"; break; }
+                this.timer -= dt;
+                const prevF = this.workAnim;
+                this.workAnim += dt * 8;
+                if (((this.workAnim / Math.PI) | 0) > ((prevF / Math.PI) | 0)) {
+                    spawnChips(f.x + rand(-14, 14), f.y - rand(6, 16), "#e8c24c", "spark", 1);
+                }
+                if (this.timer <= 0) {
+                    const gain = FARM_HARVEST + (this.job === "Farmer" ? 1 : 0);
+                    resources.food += gain;
+                    f.crop = clamp(f.crop - 0.4, 0.1, 1);
+                    this.gainXP("farm");
+                    floatText(this.x, this.y - 26, "+" + (Number.isInteger(gain) ? gain : gain.toFixed(1)) + " 🌾", "#caa12c");
+                    spawnChips(f.x + rand(-12, 12), f.y - 12, "#f4d35e", "spark", 4);
+                    sfx("deliver", 90);
+                    this.target = null; this.state = "Idle"; this.timer = rand(0.2, 0.8);
+                }
+                break;
+            }
 
             case "Walking": {
                 // re-evaluate stale targets mid-walk (fixes villagers walking to
@@ -1036,7 +1275,7 @@ class Villager {
                 // building forever — everyone goes idle once it completes
                 if (!(b instanceof Building) || b.complete) { this.target = null; this.state = "Idle"; break; }
                 this.workAnim += dt * 10;
-                b.progress += 0.34 * dt;
+                b.progress += 0.34 * dt * (b.buildSpeed || 1);
                 if (Math.random() < dt * 2.5) spawnChips(b.x + rand(-16, 16), b.y - rand(4, 26), "#d8c08a", "chip", 1);
                 if (b.progress >= 1) {
                     b.progress = 1;
@@ -1063,7 +1302,8 @@ class Villager {
             }
         }
 
-        const working = this.state === "Gathering" || this.state === "Mining" || this.state === "Building";
+        const working = this.state === "Gathering" || this.state === "Mining" ||
+                        this.state === "Building" || this.state === "Farming";
         if (moving) this.walkAnim += dt * 13 * moveBonus;
         else if (!working) this.walkAnim = 0;
 
@@ -1083,13 +1323,29 @@ class Villager {
         return true;
     }
     chooseTask() {
-        // 1) construction first — least-crewed site, max 3 builders each
+        // 0) at night, head to the nearest campfire or house (or the barn) to rest
+        if (isNight) {
+            const spots = buildings.filter(b => b.complete && (b.type === "campfire" || b.type === "house"));
+            let rt = null;
+            for (const b of spots) if (!rt || dist(this.x, this.y, b.x, b.y) < dist(this.x, this.y, rt.x, rt.y)) rt = b;
+            const cx = rt ? rt.x : storage.x, cy = rt ? rt.y : storage.y;
+            const a = rand(0, Math.PI * 2);
+            const r = rt && rt.type === "campfire" ? rand(20, 34) : rand(14, 26);
+            this.restAt = rt;
+            this.dest = {
+                x: clamp(cx + Math.cos(a) * r, 24, W - 24),
+                y: clamp(cy + 10 + Math.abs(Math.sin(a)) * r * 0.5, horizonY + 24, H - 40),
+            };
+            this.state = "GoRest";
+            return;
+        }
+        // 1) construction first — least-crewed site (monuments allow a bigger crew)
         const sites = buildings.filter(b => !b.complete);
         if (sites.length) {
             let best = null, bestScore = Infinity;
             for (const b of sites) {
                 const crew = villagers.filter(v => v !== this && v.target === b).length;
-                if (crew >= 3) continue;
+                if (crew >= b.crewCap) continue;
                 const score = crew * 1e5 + dist(this.x, this.y, b.x, b.y);
                 if (score < bestScore) { bestScore = score; best = b; }
             }
@@ -1100,6 +1356,18 @@ class Villager {
                 this.state = "Walking";
                 return;
             }
+        }
+        // 1.5) tend a ripe farm (up to 2 farmhands each) — yields food + farm XP
+        const ripeFarms = buildings.filter(b => b.complete && b.type === "farm" && b.crop > 0.5 &&
+            villagers.filter(v => v !== this && v.target === b).length < 2);
+        if (ripeFarms.length) {
+            let f = null;
+            for (const b of ripeFarms) if (!f || dist(this.x, this.y, b.x, b.y) < dist(this.x, this.y, f.x, f.y)) f = b;
+            const a = rand(0, Math.PI * 2);
+            this.target = f;
+            this.dest = { x: f.x + Math.cos(a) * 22, y: f.y + 8 + Math.abs(Math.sin(a)) * 6 };
+            this.state = "GoFarm";
+            return;
         }
         // 2) gather from one of the few nearest uncrowded nodes
         const cands = resourcesNodes.filter(r =>
@@ -1122,8 +1390,12 @@ class Villager {
         this.state = "Walking";
     }
     draw() {
-        const working = this.state === "Gathering" || this.state === "Mining" || this.state === "Building";
-        const bounce = working ? Math.abs(Math.sin(this.workAnim)) * 1.5 : Math.abs(Math.sin(this.walkAnim)) * 3.5;
+        const working = this.state === "Gathering" || this.state === "Mining" ||
+                        this.state === "Building" || this.state === "Farming";
+        const resting = this.state === "Resting";
+        const bounce = resting ? 0
+            : working ? Math.abs(Math.sin(this.workAnim)) * 1.5
+            : Math.abs(Math.sin(this.walkAnim)) * 3.5;
         const jump = this.jumpT > 0 ? Math.sin(clamp(this.jumpT, 0, 1) * Math.PI) * 13 : 0;
 
         ctx.save();
@@ -1150,6 +1422,14 @@ class Villager {
             ctx.moveTo(-6, -8); ctx.lineTo(6, -8); ctx.moveTo(-6, -5); ctx.lineTo(6, -5);
             ctx.stroke();
             ctx.restore();
+        } else if (this.job === "Farmer") {        // denim overalls
+            ctx.fillStyle = "#3f5d8a";
+            ctx.beginPath(); ctx.roundRect(-6, -7, 12, 5, 2); ctx.fill();
+            ctx.fillRect(-4.5, -12, 2.2, 6);
+            ctx.fillRect(2.3, -12, 2.2, 6);
+            ctx.fillStyle = "#e7c84a";
+            ctx.beginPath(); ctx.arc(-3.4, -7, 0.8, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(3.4, -7, 0.8, 0, Math.PI * 2); ctx.fill();
         }
         ctx.fillStyle = this.skin;
         ctx.beginPath(); ctx.arc(0, -16, 6.5, 0, Math.PI * 2); ctx.fill();
@@ -1159,6 +1439,12 @@ class Villager {
             ctx.fillRect(-8.5, -19, 17, 2.5);
             ctx.fillStyle = "#d9a800";
             ctx.fillRect(-1.5, -25, 3, 4);
+        } else if (this.job === "Farmer") {        // straw hat
+            ctx.fillStyle = "#e3c879";
+            ctx.beginPath(); ctx.ellipse(0, -19, 10, 3, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, -20, 5.2, Math.PI, 0); ctx.fill();
+            ctx.strokeStyle = "#b89a4e"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.ellipse(0, -19, 10, 3, 0, 0, Math.PI * 2); ctx.stroke();
         } else if (this.hat) {
             ctx.fillStyle = this.hat;
             ctx.beginPath(); ctx.arc(0, -18, 6.5, Math.PI, 0); ctx.fill();
@@ -1184,11 +1470,20 @@ class Villager {
             } else if (this.state === "Mining") {    // pick
                 ctx.strokeStyle = "#8d939e"; ctx.lineWidth = 3;
                 ctx.beginPath(); ctx.arc(9, -7, 4.5, Math.PI * 0.9, Math.PI * 1.9); ctx.stroke();
+            } else if (this.state === "Farming") {   // hoe
+                ctx.strokeStyle = "#9a6433"; ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.moveTo(9, -7); ctx.lineTo(13, -3); ctx.lineTo(9, -2); ctx.stroke();
             } else {                                 // hammer
                 ctx.fillStyle = "#8d939e";
                 ctx.beginPath(); ctx.roundRect(6, -11.5, 7, 5, 1.5); ctx.fill();
             }
             ctx.restore();
+        }
+        // a few z's while resting
+        if (resting) {
+            ctx.fillStyle = "rgba(120,130,160,0.9)";
+            ctx.font = "bold 8px system-ui";
+            ctx.fillText("z", 7, -22 + Math.sin(vtime * 2) * 1.5);
         }
 
         // carried goods held overhead
@@ -1362,6 +1657,119 @@ class Butterfly {               // flits about in the warmer seasons
 }
 
 // ================================================================
+//  DECOR PROPS  (player-placed; lanterns glow at night)
+// ================================================================
+class Prop {
+    constructor(x, y, type) {
+        this.x = x; this.y = y; this.type = type;
+        this.phase = rand(0, 6.3);
+        this.col = pick(["#ff6f91", "#ffd166", "#c77dff", "#7ab8ff", "#ff8fab"]);
+        this.pop = 0;
+    }
+    draw() {
+        const s = this.pop < 1 ? 0.5 + 0.5 * this.pop : 1;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(s, s);
+        ctx.fillStyle = "rgba(20,40,20,0.14)";
+        ctx.beginPath(); ctx.ellipse(0, 1, 9, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+        if (this.type === "fence") {
+            ctx.strokeStyle = "#9a6f3f"; ctx.lineWidth = 2.5;
+            ctx.fillStyle = "#b07f48";
+            for (const px of [-9, 0, 9]) { ctx.fillRect(px - 1.5, -12, 3, 12); }
+            ctx.beginPath(); ctx.moveTo(-11, -8); ctx.lineTo(11, -8); ctx.moveTo(-11, -3); ctx.lineTo(11, -3); ctx.stroke();
+        } else if (this.type === "flower") {
+            ctx.fillStyle = "#5a8a3c";
+            ctx.beginPath(); ctx.ellipse(0, -2, 10, 4, 0, 0, Math.PI * 2); ctx.fill();
+            for (let i = 0; i < 5; i++) {
+                const fx = -7 + i * 3.5, fy = -3 - (i % 2) * 3;
+                ctx.fillStyle = ["#ff6f91", "#ffd166", "#c77dff", "#7ab8ff", "#ff8fab"][i];
+                for (let p = 0; p < 5; p++) {
+                    const a = p / 5 * Math.PI * 2 + this.phase;
+                    ctx.beginPath(); ctx.arc(fx + Math.cos(a) * 1.7, fy + Math.sin(a) * 1.7, 1.3, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.fillStyle = "#ffe680";
+                ctx.beginPath(); ctx.arc(fx, fy, 1.1, 0, Math.PI * 2); ctx.fill();
+            }
+        } else { // lantern
+            ctx.strokeStyle = "#6e4a26"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -20); ctx.stroke();
+            ctx.fillStyle = "#5b3f22";
+            ctx.beginPath(); ctx.arc(0, -20, 2, 0, Math.PI * 2); ctx.fill();
+            const lit = lanternGlow();
+            ctx.fillStyle = lit > 0.05 ? `rgba(255,210,120,${0.5 + 0.5 * lit})` : "#caa15a";
+            ctx.beginPath(); ctx.roundRect(-4, -19, 8, 11, 2); ctx.fill();
+            ctx.strokeStyle = "#7a5a30"; ctx.lineWidth = 1;
+            ctx.strokeRect(-4, -19, 8, 11);
+            ctx.fillStyle = "#8a6738";
+            ctx.fillRect(-5, -20, 10, 2);
+        }
+        ctx.restore();
+    }
+}
+
+// ================================================================
+//  TRAVELING MERCHANT  (hot-air balloon; click to trade)
+// ================================================================
+class Merchant {
+    constructor() {
+        this.x = -90;
+        this.targetX = clamp(storage.x + 90, 120, W - 90);
+        this.y = horizonY + 30;
+        this.phase = rand(0, 6.3);
+        this.timer = 95;            // seconds before drifting away
+        this.leaving = false;
+    }
+    basket() { return { x: this.x, y: this.y + 34 }; }
+    update(dt, sdt) {
+        this.phase += dt;
+        this.y = horizonY + 26 + Math.sin(this.phase * 0.8) * 6;
+        if (this.leaving) {
+            this.x += 60 * dt;
+        } else {
+            this.x += (this.targetX - this.x) * Math.min(1, dt * 1.2);
+            this.timer -= sdt;
+            if (this.timer <= 0) this.depart();
+        }
+    }
+    depart() {
+        if (this.leaving) return;
+        this.leaving = true;
+        closeMerchant();
+        notify("🎈 The merchant drifts away…");
+    }
+    gone() { return this.leaving && this.x > W + 90; }
+    draw() {
+        const bx = this.x, by = this.y;
+        // basket
+        ctx.fillStyle = "#9a6433";
+        ctx.beginPath(); ctx.roundRect(bx - 9, by + 30, 18, 12, 3); ctx.fill();
+        ctx.strokeStyle = "#6e4521"; ctx.lineWidth = 1;
+        for (let i = -6; i <= 6; i += 4) { ctx.beginPath(); ctx.moveTo(bx + i, by + 30); ctx.lineTo(bx + i, by + 42); ctx.stroke(); }
+        // ropes
+        ctx.strokeStyle = "rgba(80,60,40,0.7)"; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(bx - 8, by + 30); ctx.lineTo(bx - 15, by + 2);
+        ctx.moveTo(bx + 8, by + 30); ctx.lineTo(bx + 15, by + 2);
+        ctx.stroke();
+        // balloon
+        const grad = ctx.createRadialGradient(bx - 6, by - 12, 4, bx, by - 6, 26);
+        grad.addColorStop(0, "#ff9d6e"); grad.addColorStop(1, "#e8552f");
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.ellipse(bx, by - 4, 22, 26, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.25)";
+        for (const sgn of [-1, 1]) {
+            ctx.beginPath(); ctx.ellipse(bx + sgn * 11, by - 4, 5, 24, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        // a little wave / sparkle to invite a click
+        if (!this.leaving) {
+            ctx.fillStyle = `rgba(255,240,180,${0.4 + 0.4 * Math.sin(vtime * 4)})`;
+            ctx.beginPath(); ctx.arc(bx, by - 4, 3, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+}
+
+// ================================================================
 //  WORLD GENERATION & AMBIENT DECOR
 // ================================================================
 let decor = [], clouds = [], stars = [], fireflies = [], rainStreaks = [], snowFlakes = [];
@@ -1426,12 +1834,30 @@ function isOpenSpot(x, y, forBuilding) {
 
 function placeBuilding(type, x, y) {
     const info = BUILDS[type];
+    if (info.unique && buildings.some(b => b.type === type)) {
+        sfx("error"); notify(`Only one ${info.label} can be built!`); return false;
+    }
     if (!afford(info.cost)) { sfx("error"); notify("Not enough resources!"); return false; }
     if (!isOpenSpot(x, y, true)) { sfx("error"); notify("Can't build there!"); return false; }
     pay(info.cost);
     buildings.push(new Building(x, y, type));
     spawnChips(x, y - 6, "#d8c08a", "chip", 8);
     sfx("place");
+    if (type === "monument") notify("🏛️ The Grand Monument has begun — it will take days to raise.");
+    return true;
+}
+
+function placeDecor(type, x, y) {
+    if (x < 24 || x > W - 24 || y < horizonY + 16 || y > H - 26) { if (!painting) sfx("error"); return false; }
+    if (dist(x, y, storage.x, storage.y) < 42) { if (!painting) sfx("error"); return false; }
+    for (const b of buildings) if (dist(x, y, b.x, b.y) < 34) { if (!painting) sfx("error"); return false; }
+    for (const p of props) if (dist(x, y, p.x, p.y) < 16) return false;   // don't stack decor
+    const info = DECOR[type];
+    if (!afford(info.cost)) { if (!painting) { sfx("error"); notify(`Not enough wood for a ${info.label.toLowerCase()}`); } return false; }
+    pay(info.cost);
+    props.push(new Prop(x, y, type));
+    spawnChips(x, y - 6, type === "flower" ? "#ff9bd0" : "#d8c08a", "spark", 4);
+    sfx("place", 80);
     return true;
 }
 
@@ -1502,6 +1928,45 @@ function tryAutoBuild() {
     }
 }
 
+// ---- merchant trading ----
+function spawnMerchant() {
+    merchant = new Merchant();
+    notify("🎈 A traveling merchant has arrived — click the balloon to trade!");
+    sfx("event");
+}
+function tradeLabel(t) {
+    const f = Object.entries(t.give).map(([k, v]) => v + RES_ICON[k]).join(" ");
+    const g = Object.entries(t.get).map(([k, v]) => v + RES_ICON[k]).join(" ");
+    return { f, g };
+}
+function doTrade(t) {
+    if (!merchant || merchant.leaving) return;
+    if (!afford(t.give)) { sfx("error"); return; }
+    pay(t.give);
+    for (const k in t.get) resources[k] += t.get[k];
+    sfx("trade");
+    const bp = merchant.basket();
+    floatText(bp.x, bp.y - 12, "Traded!", "#8a5b16");
+    spawnChips(bp.x, bp.y, "#ffe29a", "spark", 6);
+    renderMerchantTrades();
+}
+const RES_ICON = { wood: "🪵", stone: "🪨", food: "🌾" };
+
+// ---- victory fireworks ----
+function launchFirework() {
+    if (particles.length > 400) return;
+    const x = rand(W * 0.2, W * 0.8), y = rand(40, horizonY + 20);
+    const col = pick(["#ff5b5b", "#ffd166", "#6ee7b7", "#7ab8ff", "#d8a6ff", "#ff8fab"]);
+    for (let i = 0; i < 22; i++) {
+        const a = i / 22 * Math.PI * 2, sp = rand(45, 95);
+        const p = new Particle(x, y, col, "spark");
+        p.vx = Math.cos(a) * sp; p.vy = Math.sin(a) * sp;
+        p.life = rand(0.6, 1.15); p.maxLife = p.life; p.size = rand(1.5, 2.8);
+        particles.push(p);
+    }
+    sfx("firework", 250);
+}
+
 // ================================================================
 //  RATES & EVENTS
 // ================================================================
@@ -1569,7 +2034,7 @@ function spawnWildlife() {
 }
 
 function reset() {
-    villagers = []; resourcesNodes = []; buildings = []; floating = []; particles = [];
+    villagers = []; resourcesNodes = []; buildings = []; floating = []; particles = []; props = [];
     resources = { wood: 20, stone: 10, food: 12 };
     popCap = 5;
     gameTime = 0;
@@ -1580,8 +2045,13 @@ function reset() {
     rainAmt = harvestAmt = partyAmt = 0;
     capHintShown = false;
     hungry = false; pathWarned = false;
+    isNight = false; nightGlow = 0;
+    won = false; fireworkTimer = 0;
+    merchant = null; nextMerchantDay = MERCHANT_EVERY;
+    closeMerchant();
     placement = null;
     pathCells.clear();
+    if (ui.winBanner) ui.winBanner.classList.remove("show");
     seasonI = 0;
     seasonGrass = SEASONS[0].grassRgb.slice();
     seasonLeaf = SEASONS[0].leafRgb.slice();
@@ -1608,7 +2078,7 @@ function resize() {
     // storage barn off-screen because it never repositioned)
     storage.x = clamp(storage.x, 90, W - 90);
     storage.y = H - 150;
-    for (const list of [resourcesNodes, buildings, villagers]) {
+    for (const list of [resourcesNodes, buildings, villagers, props]) {
         for (const e of list) {
             e.x = clamp(e.x, 30, W - 30);
             e.y = clamp(e.y, horizonY + 24, H - 60);
@@ -1626,18 +2096,49 @@ function setPlacement(kind, type) {
     let ghost = null;
     if (kind === "build") { ghost = new Building(0, 0, type); ghost.complete = true; ghost.ghostAlpha = 0.55; }
     else if (kind === "nature") { ghost = new Resource(0, 0, type); }
+    else if (kind === "decor") { ghost = new Prop(0, 0, type); ghost.pop = 1; }
     placement = { kind, type, ghost };
     sfx("click");
 }
 function cancelPlacement() { placement = null; }
 
-ui.buildHouseBtn.onclick  = () => setPlacement("build", "house");
-ui.buildLumberBtn.onclick = () => setPlacement("build", "lumber");
-ui.buildQuarryBtn.onclick = () => setPlacement("build", "quarry");
-ui.buildFarmBtn.onclick   = () => setPlacement("build", "farm");
+ui.buildHouseBtn.onclick    = () => setPlacement("build", "house");
+ui.buildLumberBtn.onclick   = () => setPlacement("build", "lumber");
+ui.buildQuarryBtn.onclick   = () => setPlacement("build", "quarry");
+ui.buildFarmBtn.onclick     = () => setPlacement("build", "farm");
+ui.buildCampfireBtn.onclick = () => setPlacement("build", "campfire");
+ui.buildMonumentBtn.onclick = () => setPlacement("build", "monument");
 ui.treeBtn.onclick = () => setPlacement("nature", "tree");
 ui.rockBtn.onclick = () => setPlacement("nature", "rock");
 ui.pathBtn.onclick = () => setPlacement("path", "path");
+ui.fenceBtn.onclick   = () => setPlacement("decor", "fence");
+ui.flowerBtn.onclick  = () => setPlacement("decor", "flower");
+ui.lanternBtn.onclick = () => setPlacement("decor", "lantern");
+
+// --- merchant trade panel ---
+function renderMerchantTrades() {
+    ui.merchantTrades.innerHTML = "";
+    for (const t of TRADES) {
+        const { f, g } = tradeLabel(t);
+        const b = document.createElement("button");
+        b.className = "trade" + (afford(t.give) ? "" : " unafford");
+        b.innerHTML = `<span>${f}</span><span class="arrow">→</span><span>${g}</span>`;
+        b.onclick = () => doTrade(t);
+        ui.merchantTrades.appendChild(b);
+    }
+}
+function openMerchant() {
+    if (!merchant || merchant.leaving) return;
+    merchantOpen = true;
+    renderMerchantTrades();
+    ui.merchantPanel.classList.add("open");
+    sfx("click");
+}
+function closeMerchant() {
+    merchantOpen = false;
+    if (ui.merchantPanel) ui.merchantPanel.classList.remove("open");
+}
+function toggleMerchant() { merchantOpen ? closeMerchant() : openMerchant(); }
 
 const autoStateEl = ui.autoBtn.querySelector(".tcost");
 ui.autoBtn.onclick = () => {
@@ -1706,6 +2207,7 @@ function paintAt(x, y) {
     if (!placement) return;
     if (placement.kind === "build") { placeBuilding(placement.type, x, y); return; }
     if (placement.kind === "path")  { placePath(x, y); return; }
+    if (placement.kind === "decor") { placeDecor(placement.type, x, y); return; }
     placeNature(placement.type, x, y);
 }
 function paintLine(from, to) {
@@ -1716,6 +2218,10 @@ function paintLine(from, to) {
 }
 
 function singleClick(x, y) {
+    if (merchant && !merchant.leaving) {         // click the balloon to trade
+        const bp = merchant.basket();
+        if (dist(x, y, merchant.x, merchant.y - 4) < 30 || dist(x, y, bp.x, bp.y) < 26) { toggleMerchant(); return; }
+    }
     for (const v of villagers) {                 // poke a villager
         if (dist(v.x, v.y - 10, x, y) < 14) {
             v.jumpT = 1; emote(v.x, v.y - 30, "❤️"); sfx("jump");
@@ -1747,8 +2253,8 @@ canvas.addEventListener("pointermove", e => {
     mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true;
     if (!painting) return;
     if (dist(e.clientX, e.clientY, downPos.x, downPos.y) > 5) dragMoved = true;
-    // only nature & paths paint along a drag; buildings stay single-placement
-    if (placement && (placement.kind === "nature" || placement.kind === "path")) {
+    // nature, paths & decor paint along a drag; buildings stay single-placement
+    if (placement && placement.kind !== "build") {
         paintLine(lastPaint, { x: e.clientX, y: e.clientY });
         lastPaint = { x: e.clientX, y: e.clientY };
     }
@@ -1779,6 +2285,8 @@ addEventListener("keydown", e => {
     else if (k === "l") setPlacement("build", "lumber");
     else if (k === "q") setPlacement("build", "quarry");
     else if (k === "f") setPlacement("build", "farm");
+    else if (k === "c") setPlacement("build", "campfire");
+    else if (k === "g") setPlacement("build", "monument");
     else if (k === "t") setPlacement("nature", "tree");
     else if (k === "r") setPlacement("nature", "rock");
     else if (k === "p") setPlacement("path", "path");
@@ -1837,6 +2345,11 @@ function updateHUD() {
     }
 
     for (const [type, info] of Object.entries(BUILDS)) {
+        const taken = info.unique && buildings.some(b => b.type === type);
+        ui[info.btn].classList.toggle("unafford", !afford(info.cost) || taken);
+        ui[info.btn].classList.toggle("active", !!placement && placement.type === type);
+    }
+    for (const [type, info] of Object.entries(DECOR)) {
         ui[info.btn].classList.toggle("unafford", !afford(info.cost));
         ui[info.btn].classList.toggle("active", !!placement && placement.type === type);
     }
@@ -1850,7 +2363,18 @@ function updateHUD() {
     ui.speed2.classList.toggle("active", speed === 2);
     ui.speed4.classList.toggle("active", speed === 4);
 
-    canvas.style.cursor = placement ? "crosshair" : (hoverNode || hoverVillager) ? "pointer" : "default";
+    // merchant panel: countdown + live affordability
+    if (merchant && !merchant.leaving) {
+        setText(ui.merchantLeaves, `· leaves in ${Math.max(0, Math.ceil(merchant.timer))}s`);
+        if (merchantOpen) {
+            const btns = ui.merchantTrades.children || [];
+            for (let i = 0; i < btns.length; i++) btns[i].classList.toggle("unafford", !afford(TRADES[i].give));
+        }
+    }
+
+    canvas.style.cursor = placement ? "crosshair"
+        : (merchant && !merchant.leaving && dist(mouse.x, mouse.y, merchant.x, merchant.y) < 32) ? "pointer"
+        : (hoverNode || hoverVillager) ? "pointer" : "default";
 }
 
 // ================================================================
@@ -1890,22 +2414,43 @@ function update(dt) {
         eventTimer -= sdt;
         if (eventTimer <= 0) endEvent();
     }
-    // smooth visual transitions for weather (real time, so they finish while paused)
+    // smooth visual transitions for weather (real time, so they finish while paused).
+    // a completed monument keeps the party going forever.
     rainAmt = approach(rainAmt, currentEvent === "Rain" ? 1 : 0, dt * 1.1);
     harvestAmt = approach(harvestAmt, currentEvent === "Harvest" ? 1 : 0, dt * 1.1);
-    partyAmt = approach(partyAmt, currentEvent === "Celebration" ? 1 : 0, dt * 1.1);
+    partyAmt = approach(partyAmt, (currentEvent === "Celebration" || won) ? 1 : 0, dt * 1.1);
     updateSeason(dt);
+
+    // day/night: villagers rest at night and eat only half as much asleep
+    const dayT = (gameTime % DAY_LEN) / DAY_LEN;
+    isNight = dayT >= 0.72 && dayT < 0.97;
 
     // food economy: villagers steadily eat; farms refill the larder
     if (villagers.length > 0) {
-        resources.food = Math.max(0, resources.food - sdt * villagers.length * (FOOD_PER_DAY / DAY_LEN));
+        const eat = villagers.length * (FOOD_PER_DAY / DAY_LEN) * (isNight ? 0.5 : 1);
+        resources.food = Math.max(0, resources.food - sdt * eat);
     }
     const wasHungry = hungry;
     hungry = villagers.length > 0 && resources.food <= 0.01;
     if (hungry && !wasHungry) notify("🍽️ The larder is empty — villagers are hungry and slow");
     else if (!hungry && wasHungry) notify("😊 Bellies are full again");
 
+    // traveling merchant arrives every Nth day, then drifts off
+    const dayNum = Math.floor(gameTime / DAY_LEN) + 1;
+    if (!merchant && dayNum >= nextMerchantDay) { spawnMerchant(); nextMerchantDay = dayNum + MERCHANT_EVERY; }
+    if (merchant) {
+        merchant.update(dt, sdt);
+        if (merchant.gone()) { merchant = null; closeMerchant(); }
+    }
+
+    // victory fireworks once the monument stands
+    if (won) {
+        fireworkTimer -= sdt;
+        if (fireworkTimer <= 0) { launchFirework(); fireworkTimer = rand(0.7, 1.8); }
+    }
+
     storageWobble = Math.max(0, storageWobble - sdt * 2.2);
+    for (const p of props) if (p.pop < 1) p.pop = Math.min(1, p.pop + dt * 4);
 
     for (const r of resourcesNodes) r.update(sdt);
     for (const b of buildings) b.update(sdt);
@@ -1979,6 +2524,7 @@ function draw(dt) {
     const dayT = (gameTime % DAY_LEN) / DAY_LEN;
     const sky = skyAt(dayT);
     const nightF = sky.night;
+    nightGlow = Math.max(nightF, rainAmt * 0.35); // lanterns/campfires light up when dark or stormy
     const rainGreyTop = [104, 124, 140], rainGreyBot = [150, 164, 174];
     const topC = lerpRgb(sky.top, rainGreyTop, rainAmt * 0.7);
     const botC = lerpRgb(sky.bot, rainGreyBot, rainAmt * 0.7);
@@ -2114,12 +2660,14 @@ function draw(dt) {
         ctx.stroke();
     }
 
-    // entities, depth-sorted (rabbits & butterflies join the sort so they tuck behind trees)
+    // entities, depth-sorted (rabbits, props & butterflies join the sort so they tuck behind trees)
     const storageProxy = { get y() { return storage.y; }, draw: drawStorage };
-    const entities = [...resourcesNodes, ...buildings, ...villagers, ...critters, storageProxy];
+    const entities = [...resourcesNodes, ...buildings, ...villagers, ...critters, ...props, storageProxy];
     if (seasonI !== 3) for (const bf of butterflies) entities.push(bf);
     entities.sort((a, b) => a.y - b.y);
     for (const e of entities) e.draw();
+
+    if (merchant) merchant.draw();
 
     for (const p of particles) p.draw();
     for (const f of floating) f.draw();
@@ -2186,6 +2734,30 @@ function draw(dt) {
         }
     }
 
+    // campfire & lantern light pools — warm glows when dark (and faintly in storms)
+    if (nightGlow > 0.04) {
+        const g = nightGlow;
+        for (const b of buildings) {
+            if (!b.complete || b.type !== "campfire") continue;
+            const fx = b.x, fy = b.y - 8;
+            const fl = 0.82 + Math.sin(vtime * 9 + b.flameSeed) * 0.18;
+            const glow = ctx.createRadialGradient(fx, fy, 4, fx, fy, 62 * fl);
+            glow.addColorStop(0, `rgba(255,170,80,${0.5 * g})`);
+            glow.addColorStop(1, "rgba(255,170,80,0)");
+            ctx.fillStyle = glow;
+            ctx.fillRect(fx - 66, fy - 66, 132, 132);
+        }
+        for (const p of props) {
+            if (p.type !== "lantern") continue;
+            const lx = p.x, ly = p.y - 14;
+            const glow = ctx.createRadialGradient(lx, ly, 2, lx, ly, 42);
+            glow.addColorStop(0, `rgba(255,214,120,${0.5 * g})`);
+            glow.addColorStop(1, "rgba(255,214,120,0)");
+            ctx.fillStyle = glow;
+            ctx.fillRect(lx - 44, ly - 44, 88, 88);
+        }
+    }
+
     // hovered villager's name + activity bubble (on top of the scene)
     if (hoverVillager && villagers.includes(hoverVillager)) drawThoughtBubble(hoverVillager);
 
@@ -2201,19 +2773,21 @@ function draw(dt) {
             ctx.globalAlpha = 1;
         } else {
             const forBuild = placement.kind === "build";
-            const ok = isOpenSpot(mouse.x, mouse.y, forBuild);
             const g = placement.ghost;
             g.x = mouse.x; g.y = mouse.y;
             ctx.globalAlpha = 0.55;
             g.draw();
             ctx.globalAlpha = 1;
-            ctx.strokeStyle = ok ? "rgba(80,220,130,0.95)" : "rgba(255,95,95,0.95)";
-            ctx.lineWidth = 2;
-            ctx.setLineDash([6, 5]);
-            ctx.beginPath();
-            ctx.ellipse(mouse.x, mouse.y + 2, forBuild ? 30 : 20, forBuild ? 13 : 9, 0, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
+            if (placement.kind !== "decor") {           // build/nature show a validity ring
+                const ok = isOpenSpot(mouse.x, mouse.y, forBuild);
+                ctx.strokeStyle = ok ? "rgba(80,220,130,0.95)" : "rgba(255,95,95,0.95)";
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 5]);
+                ctx.beginPath();
+                ctx.ellipse(mouse.x, mouse.y + 2, forBuild ? 30 : 20, forBuild ? 13 : 9, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
         }
     }
 
@@ -2265,8 +2839,14 @@ window.TK = {
     get paths() { return pathCells; },
     get critters() { return critters; },
     get birds() { return birds; },
+    get props() { return props; },
+    get merchant() { return merchant; },
+    get won() { return won; },
+    get isNight() { return isNight; },
+    get trades() { return TRADES; },
     forceEvent: startEvent,
-    setPlacement, placeBuilding, placeNature, placePath, reset,
+    setPlacement, placeBuilding, placeNature, placePath, placeDecor, reset,
+    spawnMerchant, doTrade, openMerchant, closeMerchant,
 };
 </script>
 </body>
