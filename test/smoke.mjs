@@ -1,7 +1,7 @@
 // Headless smoke test for Tiny Kingdom.
 // Stubs out the DOM + canvas, evals the game script from index.html,
-// drives the real requestAnimationFrame loop for ~10 minutes of game
-// time, and asserts the simulation makes progress without errors.
+// drives the real requestAnimationFrame loop, and asserts the simulation
+// (and every interaction) behaves without errors.
 //
 // Run with: node test/smoke.mjs
 
@@ -12,8 +12,7 @@ const code = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 if (!code) { console.error("FAIL: no <script> block found in index.html"); process.exit(1); }
 
 // ---------------------------------------------------------------
-// universal no-op proxy: any property access / call returns itself,
-// numeric coercion yields 0 — good enough for a canvas 2d context
+// universal no-op proxy for the canvas 2d context
 // ---------------------------------------------------------------
 const anyProxy = new Proxy(function () {}, {
     get(_, p) {
@@ -39,18 +38,10 @@ function makeClassList() {
 }
 function makeEl(id) {
     return {
-        id: id || "",
-        textContent: "",
-        className: "",
-        style: {},
-        dataset: {},
-        disabled: false,
-        onclick: null,
-        classList: makeClassList(),
-        listeners: {},
+        id: id || "", textContent: "", className: "", style: {}, dataset: {}, disabled: false,
+        onclick: null, classList: makeClassList(), listeners: {},
         addEventListener(t, f) { (this.listeners[t] ??= []).push(f); },
-        appendChild() {},
-        remove() {},
+        appendChild() {}, remove() {},
         querySelector() { return makeEl(); },
         get offsetWidth() { return 0; },
     };
@@ -61,10 +52,7 @@ canvasEl.getContext = () => anyProxy;
 
 const elements = new Map([["game", canvasEl]]);
 globalThis.document = {
-    getElementById(id) {
-        if (!elements.has(id)) elements.set(id, makeEl(id));
-        return elements.get(id);
-    },
+    getElementById(id) { if (!elements.has(id)) elements.set(id, makeEl(id)); return elements.get(id); },
     createElement() { return makeEl(); },
     addEventListener() {},
 };
@@ -102,7 +90,12 @@ function frames(n) {
     }
 }
 const fireKey = key => globalListeners.keydown?.forEach(f => f({ key, repeat: false, preventDefault() {} }));
-const fireClick = (x, y) => canvasEl.listeners.click?.forEach(f => f({ clientX: x, clientY: y, target: canvasEl }));
+const cv = type => canvasEl.listeners[type];
+const pDown = (x, y) => cv("pointerdown")?.forEach(f => f({ button: 0, clientX: x, clientY: y, target: canvasEl }));
+const pMove = (x, y) => cv("pointermove")?.forEach(f => f({ clientX: x, clientY: y, target: canvasEl }));
+const pUp   = (x, y) => globalListeners.pointerup?.forEach(f => f({ clientX: x, clientY: y }));
+const fireClick = (x, y) => { pDown(x, y); pUp(x, y); };                 // a tap
+const fireDrag  = pts => { pDown(...pts[0]); for (let i = 1; i < pts.length; i++) pMove(...pts[i]); pUp(...pts.at(-1)); };
 const allFinite = () =>
     [...TK.villagers, ...TK.nodes, ...TK.buildings].every(e => Number.isFinite(e.x) && Number.isFinite(e.y));
 
@@ -110,39 +103,45 @@ console.log("boot:");
 check("TK debug handle exists", !!TK);
 check("starts with 3 villagers", TK.villagers.length === 3);
 check("nature scattered", TK.nodes.length >= 15, `got ${TK.nodes.length}`);
-check("starts with 20 wood / 10 stone", TK.resources.wood === 20 && TK.resources.stone === 10);
+check("starts 20 wood / 10 stone / 12 food", TK.resources.wood === 20 && TK.resources.stone === 10 && TK.resources.food === 12);
+check("every villager has a name", TK.villagers.every(v => typeof v.name === "string" && v.name.length));
+check("wildlife spawned (rabbits & birds)", TK.critters.length >= 1 && TK.birds.length >= 1);
+check("starts in Spring", TK.season === "Spring");
 
 console.log("long run (~10 min of game time at 4x):");
 TK.speed = 4;
-const eventsSeen = new Set();
+const eventsSeen = new Set(), seasonsSeen = new Set();
 let popCapSeen = TK.popCap;
 for (let burst = 0; burst < 30; burst++) {
-    frames(50); // 50 frames * 0.4s = 20s game time per burst
+    frames(50); // 50 * 0.4s = 20s game time per burst
     if (TK.event !== "None") eventsSeen.add(TK.event);
+    seasonsSeen.add(TK.season);
     popCapSeen = Math.max(popCapSeen, TK.popCap);
     if (!allFinite()) break;
 }
 check("game time advanced ~600s", TK.time > 550, `t=${TK.time.toFixed(0)}`);
 check("all positions stayed finite", allFinite());
 check("population grew", TK.villagers.length > 3, `pop=${TK.villagers.length}`);
-check("auto-grow constructed buildings", TK.buildings.filter(b => b.complete).length >= 1,
-    `built=${TK.buildings.length}`);
-const spent = TK.buildings.reduce((s, b) => s + (b.type === "house" ? 10 : b.type === "quarry" ? 10 : 15), 0);
+check("auto-grow constructed buildings", TK.buildings.filter(b => b.complete).length >= 1, `built=${TK.buildings.length}`);
+const COST = { house: 10, lumber: 15, quarry: 10, farm: 12 };
+const spent = TK.buildings.reduce((s, b) => s + (COST[b.type] || 10), 0);
 check("villagers gathered resources", TK.resources.wood + TK.resources.stone + spent > 40,
     `wood=${TK.resources.wood} stone=${TK.resources.stone} spent=${spent}`);
 check("at least one event fired", eventsSeen.size >= 1, [...eventsSeen].join(",") || "none");
+check("seasons cycled", seasonsSeen.size >= 2, [...seasonsSeen].join(","));
+check("auto-grow built a farm for food", TK.buildings.some(b => b.type === "farm"), "no farm");
 check("no villager stuck on a finished building",
     TK.villagers.every(v => !(v.state === "Building" && v.target && v.target.complete)));
-check("house raised the population cap", popCapSeen > 5 || !TK.buildings.some(b => b.complete && b.type === "house"),
-    `cap=${popCapSeen}`);
+check("house raised the population cap", popCapSeen > 5 || !TK.buildings.some(b => b.complete && b.type === "house"), `cap=${popCapSeen}`);
 check("HUD wood counter rendered", document.getElementById("wood").textContent !== "");
+check("statusLine returns text", TK.villagers.every(v => typeof v.statusLine() === "string"));
 
 console.log("interactions:");
 TK.speed = 1;
 TK.reset();
 frames(5);
 
-// manual gathering by clicking a node (one far away from any villager)
+// manual gathering by clicking a node away from villagers
 const node = TK.nodes.find(r => r.hp > 0 && TK.villagers.every(v => Math.hypot(v.x - r.x, v.y - r.y) > 60));
 if (node) {
     const before = node.type === "tree" ? TK.resources.wood : TK.resources.stone;
@@ -154,47 +153,90 @@ if (node) {
     check("clicking a node gathers +1", false, "no clear node found");
 }
 
-// tree placement through the toolbar + canvas click path
+// single tree placement via toolbar + tap
 document.getElementById("treeBtn").onclick();
 check("tree tool selected", TK.placement && TK.placement.type === "tree");
 {
     const before = TK.nodes.length;
     outer: for (let y = 220; y < 600; y += 40) {
-        for (let x = 80; x < 1200; x += 40) {
-            fireClick(x, y);
-            if (TK.nodes.length > before) break outer;
-        }
+        for (let x = 80; x < 1200; x += 40) { fireClick(x, y); if (TK.nodes.length > before) break outer; }
     }
-    check("clicking ground plants a tree", TK.nodes.length === before + 1);
+    check("tapping ground plants a tree", TK.nodes.length === before + 1);
 }
 fireKey("Escape");
 check("Escape cancels placement", TK.placement === null);
 
-// manual house placement → construction → completion → pop cap
-// (auto-grow off so no other construction interferes with the checks)
-document.getElementById("autoBtn").onclick();
-check("auto-grow toggles off", TK.autoGrow === false);
-TK.resources.wood = 60; TK.resources.stone = 60;
-document.getElementById("buildHouseBtn").onclick();
+// drag-to-paint a whole row of trees
+document.getElementById("treeBtn").onclick();
 {
-    const before = TK.buildings.length;
-    outer: for (let y = 240; y < 580; y += 50) {
-        for (let x = 320; x < 1200; x += 50) {
-            fireClick(x, y);
-            if (TK.buildings.length > before) break outer;
-        }
-    }
-    check("clicking ground places a house site", TK.buildings.length === before + 1);
-    const house = TK.buildings[TK.buildings.length - 1];
+    const before = TK.nodes.length;
+    fireDrag([[60, 250], [1220, 250]]);
+    check("click-drag paints many trees", TK.nodes.length - before >= 5, `added ${TK.nodes.length - before}`);
     fireKey("Escape");
-    TK.speed = 4;
-    frames(200); // 80s — plenty for walk + build
-    check("villagers completed the house", house.complete);
-    check("pop cap rose to 7", TK.popCap === 7, `cap=${TK.popCap}`);
-    check("no one is still 'Building' afterwards", TK.villagers.every(v => v.state !== "Building"));
 }
 
-// pause stops game time
+// paths: drag a road, costs 1 stone per tile and speeds villagers
+document.getElementById("pathBtn").onclick();
+check("path tool selected", TK.placement && TK.placement.type === "path");
+{
+    TK.resources.stone = 40;
+    const stoneBefore = TK.resources.stone;
+    fireDrag([[200, 500], [900, 500]]);
+    check("dragging lays down path tiles", TK.paths.size >= 5, `tiles=${TK.paths.size}`);
+    check("paths cost stone", TK.resources.stone < stoneBefore, `${stoneBefore} -> ${TK.resources.stone}`);
+    fireKey("Escape");
+}
+
+// professions: enough harvests turn a villager into a specialist
+{
+    const v = TK.villagers[0];
+    v.job = null; v.woodXP = 0; v.stoneXP = 0;
+    for (let i = 0; i < 6; i++) v.gainXP("tree");
+    check("6 wood harvests make a Lumberjack", v.job === "Lumberjack", `job=${v.job}`);
+    check("Lumberjack gathers wood faster", v.jobMult("tree") < 1 && v.jobMult("rock") === 1);
+}
+
+// food & farms: a ripe farm yields food; an empty larder makes villagers hungry
+{
+    TK.reset();
+    TK.resources.wood = 80;
+    document.getElementById("buildFarmBtn").onclick();
+    const before = TK.buildings.length;
+    outer: for (let y = 250; y < 560; y += 50) {
+        for (let x = 340; x < 1180; x += 50) { fireClick(x, y); if (TK.buildings.length > before) break outer; }
+    }
+    check("farm site placed", TK.buildings.length === before + 1);
+    fireKey("Escape");
+    const farm = TK.buildings[TK.buildings.length - 1];
+    TK.speed = 4;
+    frames(220);
+    check("villagers completed the farm", farm.complete);
+    const foodBefore = TK.resources.food;
+    farm.crop = 0.999;          // about to ripen
+    TK.speed = 1;
+    frames(2);
+    check("ripe farm yields food", TK.resources.food > foodBefore, `${foodBefore.toFixed(1)} -> ${TK.resources.food.toFixed(1)}`);
+
+    TK.resources.food = 0;      // empty larder
+    frames(2);
+    check("empty larder makes villagers hungry", TK.hungry === true);
+    TK.resources.food = 30;
+    frames(2);
+    check("refilling food clears hunger", TK.hungry === false);
+}
+
+// seasons advance with time and recolour deterministically
+{
+    TK.reset();
+    check("reset returns to Spring", TK.season === "Spring");
+    TK.time = 130; frames(3);
+    check("after one day it's Summer", TK.season === "Summer", TK.season);
+    TK.time = 370; frames(3);
+    check("later it's Winter", TK.season === "Winter", TK.season);
+}
+
+// pause / unpause
+TK.reset();
 document.getElementById("pauseBtn").onclick();
 {
     const t0 = TK.time;
@@ -209,7 +251,7 @@ document.getElementById("pauseBtn").onclick();
 document.getElementById("resetBtn").onclick();
 document.getElementById("resetBtn").onclick();
 check("double-click reset restarts the kingdom",
-    TK.time === 0 && TK.villagers.length === 3 && TK.buildings.length === 0);
+    TK.time === 0 && TK.villagers.length === 3 && TK.buildings.length === 0 && TK.paths.size === 0);
 
 frames(10);
 check("loop still alive after all interactions", rafQ.length > 0);

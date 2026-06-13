@@ -51,6 +51,7 @@
     .stat .val { display: inline-block; min-width: 1.2em; text-align: center; }
     .bump { animation: bump 0.35s cubic-bezier(0.3,1.6,0.5,1); }
     @keyframes bump { 35% { transform: scale(1.35); } }
+    .val.danger { color: #c0392b; }
 
     #title.panel {
         font-weight: 800; letter-spacing: 0.5px; font-size: 15px;
@@ -201,6 +202,7 @@
         <div class="panel">
             <span class="stat">🪵 <span class="val" id="wood">20</span></span>
             <span class="stat">🪨 <span class="val" id="stone">10</span></span>
+            <span class="stat">🌾 <span class="val" id="food">12</span></span>
         </div>
         <div class="panel">
             <span class="stat">👥 <span id="popWrap"><span><span class="val" id="pop">3</span>/<span id="cap">5</span></span>
@@ -237,9 +239,11 @@
     <button class="tool" id="buildHouseBtn"><kbd>H</kbd><span class="ticon">🏠</span><span class="tlabel">House</span><span class="tcost">10🪵 · +2 pop</span></button>
     <button class="tool" id="buildLumberBtn"><kbd>L</kbd><span class="ticon">🪓</span><span class="tlabel">Lumber Camp</span><span class="tcost">10🪵 5🪨 · +wood</span></button>
     <button class="tool" id="buildQuarryBtn"><kbd>Q</kbd><span class="ticon">⛏️</span><span class="tlabel">Quarry</span><span class="tcost">10🪨 · +stone</span></button>
+    <button class="tool" id="buildFarmBtn"><kbd>F</kbd><span class="ticon">🌾</span><span class="tlabel">Farm</span><span class="tcost">12🪵 · +food</span></button>
     <span class="tb-divider"></span>
     <button class="tool" id="treeBtn"><kbd>T</kbd><span class="ticon">🌳</span><span class="tlabel">Plant Tree</span><span class="tcost">free</span></button>
     <button class="tool" id="rockBtn"><kbd>R</kbd><span class="ticon">🪨</span><span class="tlabel">Place Rock</span><span class="tcost">free</span></button>
+    <button class="tool" id="pathBtn"><kbd>P</kbd><span class="ticon">🛤️</span><span class="tlabel">Path</span><span class="tcost">1🪨 · +20% speed</span></button>
     <span class="tb-divider"></span>
     <button class="tool active" id="autoBtn" title="Villagers plan new buildings on their own"><kbd>A</kbd><span class="ticon">🤖</span><span class="tlabel">Auto-grow</span><span class="tcost">on</span></button>
 </div>
@@ -253,17 +257,20 @@
         <p>A cozy little settlement that mostly runs itself. Villagers chop trees, mine rocks, haul everything back to the storage barn and construct new buildings. Your job: nudge it along.</p>
         <h3>How to play</h3>
         <ul>
-            <li><b>Click trees & rocks</b> to gather a resource yourself.</li>
+            <li><b>Click trees & rocks</b> to gather a resource yourself, or <b>click a villager</b> to say hi. <b>Hover a villager</b> to see their name and what they're up to.</li>
             <li><b>Pick a building</b> from the toolbar, then click the ground to place a construction site — villagers will build it.</li>
-            <li><b>Houses</b> raise the population cap; <b>lumber camps / quarries</b> speed up gathering.</li>
-            <li><b>Plant trees and rocks</b> anywhere to keep nature stocked.</li>
-            <li><b>Auto-grow</b> lets villagers spend resources on new buildings themselves — turn it off for full control.</li>
+            <li><b>Houses</b> raise the population cap; <b>lumber camps / quarries</b> speed up gathering; <b>farms</b> 🌾 grow food.</li>
+            <li><b>Food</b> is eaten a little each day. If it runs out villagers don't starve — they just get hungry and slow, so keep a farm or two going.</li>
+            <li><b>Plant trees & rocks</b> anywhere, and <b>click-drag</b> to paint whole forests. Drag a <b>path</b> 🛤️ (1🪨 each) to give villagers a 20% speed boost.</li>
+            <li><b>Villagers specialise</b>: chop or mine enough and they become a 🪓 Lumberjack or ⛏️ Miner, working their trade 40% faster.</li>
+            <li><b>Seasons</b> drift by — 🌸 spring, ☀️ summer, 🍂 autumn, ❄️ winter — recolouring the world. Crops race in summer; nature regrows slowly under snow.</li>
+            <li><b>Auto-grow</b> lets villagers plan and fund new buildings themselves — turn it off for full control.</li>
             <li>Watch for <b>events</b>: 🌧️ rain slows gathering but regrows nature fast, 🌾 harvest speeds gathering, 🎊 celebrations make villagers quick.</li>
         </ul>
         <h3>Keys</h3>
         <div class="keys">
-            <kbd>H / L / Q</kbd><span>Select house / lumber camp / quarry</span>
-            <kbd>T / R</kbd><span>Plant tree / place rock</span>
+            <kbd>H / L / Q / F</kbd><span>House / lumber camp / quarry / farm</span>
+            <kbd>T / R / P</kbd><span>Plant tree / place rock / paint path</span>
             <kbd>Esc / right-click</kbd><span>Cancel placement</span>
             <kbd>Space</kbd><span>Pause</span>
             <kbd>1 / 2 / 3</kbd><span>Game speed 1x / 2x / 4x</span>
@@ -285,9 +292,9 @@ const ctx = canvas.getContext("2d");
 const msgContainer = document.getElementById("messages");
 
 const ui = {};
-for (const id of ["wood","stone","pop","cap","popBar","day","dayStat","eventIcon","eventName","eventDesc","eventBar",
+for (const id of ["wood","stone","food","pop","cap","popBar","day","eventIcon","eventName","eventDesc","eventBar",
                   "pauseBtn","speed1","speed2","speed4","soundBtn","helpBtn","resetBtn",
-                  "buildHouseBtn","buildLumberBtn","buildQuarryBtn","treeBtn","rockBtn","autoBtn",
+                  "buildHouseBtn","buildLumberBtn","buildQuarryBtn","buildFarmBtn","treeBtn","rockBtn","pathBtn","autoBtn",
                   "helpOverlay","helpClose"]) {
     ui[id] = document.getElementById(id);
 }
@@ -304,10 +311,6 @@ function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 function lerp(a, b, t) { return a + (b - a) * t; }
 function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
 function hexRgb(h) { return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
-function mixHex(h1, h2, t) {
-    const a = hexRgb(h1), b = hexRgb(h2);
-    return `rgb(${(lerp(a[0],b[0],t))|0},${(lerp(a[1],b[1],t))|0},${(lerp(a[2],b[2],t))|0})`;
-}
 
 // ================================================================
 //  AUDIO  (tiny WebAudio synth, created lazily on first input)
@@ -381,10 +384,11 @@ function sfx(name, minGap) {
 //  GAME STATE
 // ================================================================
 let villagers = [], resourcesNodes = [], buildings = [], floating = [], particles = [];
-let resources = { wood: 20, stone: 10 };
+let birds = [], critters = [], butterflies = [];
+let resources = { wood: 20, stone: 10, food: 12 };
 let popCap = 5;
 let speed = 1, lastSpeed = 1;
-let placement = null;            // null | {kind:"nature"|"build", type:string}
+let placement = null;            // null | {kind:"nature"|"build"|"path", type:string}
 let mouse = { x: -999, y: -999, inside: false };
 let hoverNode = null, hoverVillager = null;
 let gameTime = 0, vtime = 0;     // scaled game time / unscaled visual time
@@ -392,9 +396,46 @@ let buildTick = 0, popTick = 0;
 let autoGrow = true;
 let storageWobble = 0;
 let capHintShown = false;
+let hungry = false;
 
 const storage = { x: 150, y: 300 };
 const POP_INTERVAL = 20, AUTO_INTERVAL = 18, DAY_LEN = 120;
+const FOOD_PER_DAY = 1;          // food eaten per villager per in-game day
+const FARM_YIELD = 3;            // food produced each time a crop ripens
+
+// ---- paths: a grid of dirt tiles that speed villagers up ----
+const PATH_CELL = 24;
+const pathCells = new Map();     // "cx,cy" -> {x, y, born}
+function cellKey(cx, cy) { return cx + "," + cy; }
+function onPath(x, y) { return pathCells.has(cellKey(Math.floor(x / PATH_CELL), Math.floor(y / PATH_CELL))); }
+
+// ---- seasons: cycle once per in-game day, eased for smooth transitions ----
+const SEASON_LEN = DAY_LEN;
+const SEASONS = [
+    { name: "Spring", icon: "🌸", grass: "#92c75c", leaf: "#54c46d", respawn: 1.1, crop: 1.1 },
+    { name: "Summer", icon: "☀️", grass: "#84c24a", leaf: "#36a04a", respawn: 1.0, crop: 1.5 },
+    { name: "Autumn", icon: "🍂", grass: "#b6a04f", leaf: "#e2893a", respawn: 0.85, crop: 0.8 },
+    { name: "Winter", icon: "❄️", grass: "#cfd8df", leaf: "#a9b6ad", respawn: 0.5, crop: 0.25 },
+];
+for (const s of SEASONS) { s.grassRgb = hexRgb(s.grass); s.leafRgb = hexRgb(s.leaf); }
+let seasonI = 0;
+let seasonGrass = SEASONS[0].grassRgb.slice();
+let seasonLeaf = SEASONS[0].leafRgb.slice();
+let snowAmt = 0, respawnMult = 1, cropMult = 1;
+function seasonNow() { return SEASONS[Math.floor(gameTime / SEASON_LEN) % 4]; }
+
+// ---- villager names & professions ----
+const NAMES = ["Bramble", "Pip", "Elara", "Bob", "Hazel", "Tomte", "Wren", "Olek", "Fenn",
+    "Mabel", "Bjorn", "Suki", "Garr", "Lull", "Posy", "Knox", "Dill", "Mira", "Cob",
+    "Tansy", "Rolf", "Juni", "Otto", "Sage", "Pim", "Marn", "Ada", "Edda", "Rune", "Fig"];
+const IDLE_THOUGHTS = ["daydreaming about rocks", "humming a tune", "watching the clouds",
+    "thinking about lunch", "admiring a flower", "counting trees", "missing the bunnies",
+    "planning a nap", "wondering about the moon", "stretching"];
+const PROFESSIONS = {
+    Lumberjack: { res: "wood", shirt: "#7a3b2e", icon: "🪓" },
+    Miner:      { res: "stone", shirt: "#5b6470", icon: "⛏️" },
+};
+const JOB_THRESHOLD = 6;         // successful harvests before a villager specialises
 
 // weather/event amounts eased toward targets each frame for smooth transitions
 let currentEvent = "None";
@@ -411,6 +452,7 @@ const BUILDS = {
     house:  { label: "House",       icon: "🏠", cost: { wood: 10 },           btn: "buildHouseBtn" },
     lumber: { label: "Lumber Camp", icon: "🪓", cost: { wood: 10, stone: 5 }, btn: "buildLumberBtn" },
     quarry: { label: "Quarry",      icon: "⛏️", cost: { stone: 10 },          btn: "buildQuarryBtn" },
+    farm:   { label: "Farm",        icon: "🌾", cost: { wood: 12 },           btn: "buildFarmBtn" },
 };
 
 function afford(cost) { return Object.entries(cost).every(([k, v]) => resources[k] >= v); }
@@ -533,6 +575,9 @@ class Resource {
         if (type === "tree") {
             this.leaf = pick(["#2e9e4d", "#35a344", "#2f9e5b", "#37a851"]);
             this.leafLight = pick(["#46c468", "#52cc66", "#4bc973"]);
+            this.leafRgb = hexRgb(this.leaf);
+            this.leafLightRgb = hexRgb(this.leafLight);
+            this.leafFall = 0;
         } else {
             this.pts = [];
             for (let i = 0; i < 7; i++) {
@@ -544,8 +589,13 @@ class Resource {
     }
     update(dt) {
         if (this.wobble > 0) this.wobble -= dt * 9;
+        // autumn trees occasionally shed a leaf
+        if (this.type === "tree" && this.hp > 0 && seasonI === 2 && Math.random() < dt * 0.5) {
+            spawnChips(this.x + rand(-12, 12), this.y - rand(20, 34), pick(["#e2893a", "#d8682f", "#e8b34a"]), "leaf", 1);
+        }
         if (this.hp <= 0) {
-            this.respawn -= dt * (rainAmt > 0.4 ? 2.2 : 1); // rain regrows nature faster
+            // rain regrows nature faster; winter slows it right down
+            this.respawn -= dt * (rainAmt > 0.4 ? 2.2 : 1) * respawnMult;
             if (this.respawn <= 0) {
                 this.hp = this.max;
                 this.wobble = 1;
@@ -604,19 +654,26 @@ class Resource {
             ctx.beginPath(); ctx.roundRect(-4, -20, 8, 20, 2); ctx.fill();
             ctx.fillStyle = "#5b3c1e";
             ctx.fillRect(-4, -6, 3, 6);
-            // foliage sways gently
+            // foliage sways gently, tinted toward the current season
             const sway = Math.sin(vtime * 1.1 + this.phase) * 0.045;
+            const leafC = rgbStr(lerpRgb(this.leafRgb, seasonLeaf, 0.55));
+            const leafLightC = rgbStr(lerpRgb(this.leafLightRgb, seasonLeaf, 0.45));
             ctx.save();
             ctx.translate(0, -20);
             ctx.rotate(sway);
             ctx.scale(hpScale, hpScale);
-            ctx.fillStyle = this.leaf;
+            ctx.fillStyle = leafC;
             ctx.beginPath(); ctx.arc(0, -6, 15, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(-9, 1, 10, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(9, 1, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = this.leafLight;
+            ctx.fillStyle = leafLightC;
             ctx.beginPath(); ctx.arc(-4, -10, 9, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(5, -4, 6, 0, Math.PI * 2); ctx.fill();
+            if (snowAmt > 0.25) {                         // snow settled on the canopy
+                ctx.fillStyle = `rgba(255,255,255,${snowAmt * 0.85})`;
+                ctx.beginPath(); ctx.arc(-3, -14, 8, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+                ctx.beginPath(); ctx.arc(6, -9, 5, Math.PI * 1.05, Math.PI * 2); ctx.fill();
+            }
             ctx.restore();
         } else {
             ctx.fillStyle = "rgba(20,40,20,0.15)";
@@ -635,6 +692,10 @@ class Resource {
             ctx.moveTo(this.pts[0][0] * 0.55 - 2, this.pts[0][1] * 0.55 - 3);
             for (let i = 1; i < 4; i++) ctx.lineTo(this.pts[i][0] * 0.55 - 2, this.pts[i][1] * 0.55 - 3);
             ctx.closePath(); ctx.fill();
+            if (snowAmt > 0.25) {
+                ctx.fillStyle = `rgba(255,255,255,${snowAmt * 0.8})`;
+                ctx.beginPath(); ctx.ellipse(-2, -8, 8, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+            }
             ctx.restore();
         }
         ctx.restore();
@@ -653,14 +714,27 @@ class Building {
         this.smokeTimer = rand(1, 3);
         this.wall = pick(["#e3a868", "#e8b27a", "#dba05f"]);
         this.roof = pick(["#c75c4e", "#b85546", "#cf6a5c", "#9a6fb8"]);
+        this.crop = 0.12;               // farms: 0..1 ripeness
+        this.cropPhase = rand(0, 6.3);
     }
     update(dt) {
         if (this.popT > 0) this.popT -= dt * 2.2;
-        if (this.complete && this.type === "house") {
+        if (!this.complete) return;
+        if (this.type === "house") {
             this.smokeTimer -= dt;
             if (this.smokeTimer <= 0) {
                 this.smokeTimer = rand(1.6, 3.4);
                 spawnChips(this.x + 13, this.y - 46, "#d3d8de", "smoke", 1);
+            }
+        } else if (this.type === "farm") {
+            // crops grow over time; faster in summer, barely at all in winter
+            this.crop += dt * 0.05 * cropMult * (currentEvent === "Harvest" ? 1.6 : 1);
+            if (this.crop >= 1) {
+                this.crop = 0.12;
+                resources.food += FARM_YIELD;
+                floatText(this.x, this.y - 30, "+" + FARM_YIELD + " 🌾", "#caa12c");
+                spawnChips(this.x + rand(-14, 14), this.y - 14, "#f4d35e", "spark", 5);
+                sfx("deliver", 120);
             }
         }
     }
@@ -701,6 +775,28 @@ class Building {
             ctx.beginPath(); ctx.moveTo(16, -2); ctx.lineTo(16, -36); ctx.lineTo(2, -38); ctx.stroke();
             ctx.strokeStyle = "#444"; ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(4, -38); ctx.lineTo(4, -28); ctx.stroke();
+        } else if (this.type === "farm") {
+            const ripe = clamp(this.crop, 0, 1);
+            ctx.fillStyle = "#7a5230";                       // tilled plot
+            ctx.beginPath(); ctx.roundRect(-24, -10, 48, 14, 3); ctx.fill();
+            ctx.strokeStyle = "rgba(60,40,20,0.5)"; ctx.lineWidth = 1;
+            for (let rx = -18; rx <= 18; rx += 9) { ctx.beginPath(); ctx.moveTo(rx, -9); ctx.lineTo(rx, 3); ctx.stroke(); }
+            // wheat rows — taller & more golden as the crop ripens
+            const h = 4 + ripe * 13;
+            const stalk = rgbStr(lerpRgb(hexRgb("#7bbf4e"), hexRgb("#e8c24c"), ripe));
+            for (let i = 0; i < 9; i++) {
+                const sx = -20 + i * 5;
+                const sway = Math.sin(vtime * 1.6 + this.cropPhase + i * 0.6) * (1 + ripe * 1.5);
+                ctx.strokeStyle = stalk; ctx.lineWidth = 1.8;
+                ctx.beginPath(); ctx.moveTo(sx, -7); ctx.lineTo(sx + sway, -7 - h); ctx.stroke();
+                if (ripe > 0.5) {                            // grain heads
+                    ctx.fillStyle = "#f0cf5a";
+                    ctx.beginPath(); ctx.arc(sx + sway, -7 - h, 1.8, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+            // little fence post + sign
+            ctx.strokeStyle = "#6e4a26"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-24, 2); ctx.lineTo(-24, -8); ctx.moveTo(24, 2); ctx.lineTo(24, -8); ctx.stroke();
         } else { // lumber camp
             ctx.fillStyle = "#8b5a2b";                       // shed
             ctx.beginPath(); ctx.roundRect(-21, -18, 30, 19, 2); ctx.fill();
@@ -825,6 +921,7 @@ function storagePoint() {
 class Villager {
     constructor(x, y) {
         this.x = x; this.y = y;
+        this.name = pick(NAMES);
         this.state = "Idle";
         this.target = null;                 // entity (Resource | Building) or null
         this.dest = { x, y };               // point currently walked toward
@@ -838,6 +935,37 @@ class Villager {
         this.skin = pick(["#ffd36a", "#ffc88f", "#e8a96b", "#c98a55"]);
         this.shirt = pick(["#4a86e8", "#e06666", "#6aa84f", "#a64d79", "#e69138", "#45818e"]);
         this.hat = Math.random() < 0.45 ? pick(["#c75c4e", "#5b7c99", "#7a5d3a"]) : null;
+        this.thought = pick(IDLE_THOUGHTS);
+        this.woodXP = 0; this.stoneXP = 0;  // experience toward a profession
+        this.job = null;                    // null | "Lumberjack" | "Miner"
+    }
+    // matching profession gathers its resource 40% faster
+    jobMult(type) {
+        if (this.job === "Lumberjack" && type === "tree") return 0.6;
+        if (this.job === "Miner" && type === "rock") return 0.6;
+        return 1;
+    }
+    gainXP(type) {
+        if (this.job) return;
+        if (type === "tree") this.woodXP++; else this.stoneXP++;
+        if (this.woodXP >= JOB_THRESHOLD || this.stoneXP >= JOB_THRESHOLD) {
+            this.job = this.woodXP >= this.stoneXP ? "Lumberjack" : "Miner";
+            this.shirt = PROFESSIONS[this.job].shirt;
+            floatText(this.x, this.y - 30, this.name + " → " + this.job + "!", "#2c7a43");
+            emote(this.x, this.y - 30, PROFESSIONS[this.job].icon);
+            notify(`${PROFESSIONS[this.job].icon} ${this.name} became a ${this.job}!`);
+            sfx("join");
+        }
+    }
+    statusLine() {
+        switch (this.state) {
+            case "Gathering": return "chopping wood";
+            case "Mining":    return "mining stone";
+            case "Building":  return "building";
+            case "Delivering":return "hauling " + (this.carry === "wood" ? "logs" : "stone");
+            case "Walking":   return this.target ? "off to work" : "wandering";
+            default:          return hungry ? "hungry…" : this.thought;
+        }
     }
     update(dt) {
         if (this.jumpT > 0) this.jumpT -= dt * 2.4;
@@ -847,6 +975,7 @@ class Villager {
         switch (this.state) {
             case "Idle":
                 this.timer -= dt;
+                if (Math.random() < dt * 0.25) this.thought = pick(IDLE_THOUGHTS);
                 if (this.timer <= 0) { this.chooseTask(); this.timer = rand(0.8, 2.2); }
                 break;
 
@@ -859,7 +988,7 @@ class Villager {
                 if (!moving) {
                     if (this.target instanceof Resource) {
                         this.state = this.target.type === "tree" ? "Gathering" : "Mining";
-                        this.timer = gatherTime(this.target.type);
+                        this.timer = gatherTime(this.target.type) * this.jobMult(this.target.type) * (hungry ? 1.5 : 1);
                         this.workAnim = 0;
                     } else if (this.target instanceof Building) {
                         this.state = "Building";
@@ -892,6 +1021,7 @@ class Villager {
                 }
                 if (this.timer <= 0) {
                     node.harvest();
+                    this.gainXP(node.type);
                     this.carry = node.type === "tree" ? "wood" : "stone";
                     this.target = null;
                     this.dest = storagePoint();
@@ -944,7 +1074,10 @@ class Villager {
         const d = Math.hypot(dx, dy);
         if (Math.abs(dx) > 0.5) this.facing = dx > 0 ? 1 : -1;
         if (d < 5) return false;
-        const step = Math.min(d, this.speed * bonus * dt);
+        let mult = bonus;
+        if (hungry) mult *= 0.6;            // sluggish on an empty stomach
+        if (onPath(this.x, this.y)) mult *= 1.2; // roads speed travel
+        const step = Math.min(d, this.speed * mult * dt);
         this.x += dx / d * step;
         this.y += dy / d * step;
         return true;
@@ -1008,9 +1141,25 @@ class Villager {
         // body + head
         ctx.fillStyle = this.shirt;
         ctx.beginPath(); ctx.roundRect(-6, -12, 12, 10, 4); ctx.fill();
+        if (this.job === "Lumberjack") {           // flannel plaid
+            ctx.save();
+            ctx.beginPath(); ctx.roundRect(-6, -12, 12, 10, 4); ctx.clip();
+            ctx.strokeStyle = "rgba(0,0,0,0.28)"; ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(-2, -12); ctx.lineTo(-2, -2); ctx.moveTo(3, -12); ctx.lineTo(3, -2);
+            ctx.moveTo(-6, -8); ctx.lineTo(6, -8); ctx.moveTo(-6, -5); ctx.lineTo(6, -5);
+            ctx.stroke();
+            ctx.restore();
+        }
         ctx.fillStyle = this.skin;
         ctx.beginPath(); ctx.arc(0, -16, 6.5, 0, Math.PI * 2); ctx.fill();
-        if (this.hat) {
+        if (this.job === "Miner") {                // yellow hard hat
+            ctx.fillStyle = "#f2c200";
+            ctx.beginPath(); ctx.arc(0, -18, 6.8, Math.PI, 0); ctx.fill();
+            ctx.fillRect(-8.5, -19, 17, 2.5);
+            ctx.fillStyle = "#d9a800";
+            ctx.fillRect(-1.5, -25, 3, 4);
+        } else if (this.hat) {
             ctx.fillStyle = this.hat;
             ctx.beginPath(); ctx.arc(0, -18, 6.5, Math.PI, 0); ctx.fill();
             ctx.fillRect(-8, -19, 16, 2.5);
@@ -1061,10 +1210,161 @@ class Villager {
     }
 }
 
+// villager name + activity bubble, drawn on top of everything when hovered
+function drawThoughtBubble(v) {
+    const name = (v.job ? PROFESSIONS[v.job].icon + " " : "") + v.name;
+    const status = v.statusLine();
+    ctx.font = "bold 12px system-ui";
+    const w1 = ctx.measureText(name).width;
+    ctx.font = "11px system-ui";
+    const w2 = ctx.measureText(status).width;
+    const w = Math.max(w1, w2) + 18;
+    const h = 34;
+    const bx = clamp(v.x, w / 2 + 6, W - w / 2 - 6);
+    const by = v.y - 44;
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.96)";
+    ctx.strokeStyle = "rgba(20,40,80,0.18)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(bx - w / 2, by - h, w, h, 8); ctx.fill(); ctx.stroke();
+    ctx.beginPath();                       // little tail toward the villager
+    ctx.moveTo(v.x - 5, by); ctx.lineTo(v.x + 5, by); ctx.lineTo(v.x, by + 7);
+    ctx.closePath(); ctx.fill();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#2d3142";
+    ctx.font = "bold 12px system-ui";
+    ctx.fillText(name, bx, by - h + 14);
+    ctx.fillStyle = "#7a7f8f";
+    ctx.font = "11px system-ui";
+    ctx.fillText(status, bx, by - h + 27);
+    ctx.restore();
+}
+
+// ================================================================
+//  WILDLIFE  (ambient — purely for life, no gameplay effect)
+// ================================================================
+class Bird {
+    constructor() {
+        this.dir = Math.random() < 0.5 ? 1 : -1;
+        this.x = this.dir > 0 ? rand(-80, -20) : W + rand(20, 80);
+        this.y = rand(20, horizonY * 0.7);
+        this.speed = rand(28, 52);
+        this.flap = rand(0, 6.3);
+        this.bob = rand(0, 6.3);
+        this.size = rand(0.7, 1.2);
+    }
+    update(dt) {
+        this.x += this.speed * this.dir * dt;
+        this.flap += dt * 9;
+        this.y += Math.sin(vtime * 0.8 + this.bob) * 4 * dt;
+    }
+    offscreen() { return this.dir > 0 ? this.x > W + 90 : this.x < -90; }
+    draw() {
+        const f = Math.sin(this.flap) * 0.5 + 0.5;
+        ctx.strokeStyle = "rgba(50,60,80,0.6)";
+        ctx.lineWidth = 1.6 * this.size;
+        ctx.beginPath();
+        ctx.moveTo(this.x - 6 * this.size, this.y + f * 3 * this.size);
+        ctx.lineTo(this.x, this.y - 1);
+        ctx.lineTo(this.x + 6 * this.size, this.y + f * 3 * this.size);
+        ctx.stroke();
+    }
+}
+
+class Critter {                 // a hoppy little rabbit
+    constructor(x, y) {
+        this.x = x; this.y = y;
+        this.tx = x; this.ty = y;
+        this.hop = 0; this.rest = rand(0.5, 2.5);
+        this.fleeing = false;
+        this.facing = 1;
+        this.brown = Math.random() < 0.5;
+    }
+    update(dt) {
+        // flee from the nearest close villager
+        let near = null, nd = 60;
+        for (const v of villagers) { const d = dist(v.x, v.y, this.x, this.y); if (d < nd) { nd = d; near = v; } }
+        this.fleeing = !!near;
+
+        if (near) {
+            const a = Math.atan2(this.y - near.y, this.x - near.x);
+            this.tx = clamp(this.x + Math.cos(a) * 70, 20, W - 20);
+            this.ty = clamp(this.y + Math.sin(a) * 50, horizonY + 20, H - 30);
+            this.rest = 0;
+        }
+        const dx = this.tx - this.x, dy = this.ty - this.y;
+        const d = Math.hypot(dx, dy);
+        if (d > 4) {
+            this.hop += dt * (this.fleeing ? 16 : 8);
+            const sp = (this.fleeing ? 70 : 26) * dt;
+            this.x += dx / d * Math.min(d, sp);
+            this.y += dy / d * Math.min(d, sp);
+            if (Math.abs(dx) > 0.5) this.facing = dx > 0 ? 1 : -1;
+        } else {
+            this.hop = 0;
+            this.rest -= dt;
+            if (this.rest <= 0) {   // pick a new nearby spot to nibble toward
+                this.tx = clamp(this.x + rand(-80, 80), 20, W - 20);
+                this.ty = clamp(this.y + rand(-50, 50), horizonY + 20, H - 30);
+                this.rest = rand(1.5, 4);
+            }
+        }
+    }
+    draw() {
+        const hopY = Math.abs(Math.sin(this.hop)) * 6;
+        const body = this.brown ? "#b08454" : "#eef0f2";
+        const ear = this.brown ? "#9a6f42" : "#dfe2e6";
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = "rgba(20,40,20,0.16)";
+        ctx.beginPath(); ctx.ellipse(0, 0, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.translate(0, -hopY);
+        ctx.scale(this.facing, 1);
+        ctx.fillStyle = body;
+        ctx.beginPath(); ctx.ellipse(0, -4, 6, 4.5, 0, 0, Math.PI * 2); ctx.fill();   // body
+        ctx.beginPath(); ctx.arc(5, -7, 3.2, 0, Math.PI * 2); ctx.fill();              // head
+        ctx.fillStyle = ear;
+        ctx.beginPath(); ctx.ellipse(4, -12, 1.3, 3.5, -0.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(6, -12, 1.3, 3.5, 0.1, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.arc(-6, -3, 1.8, 0, Math.PI * 2); ctx.fill();             // tail
+        ctx.fillStyle = "#332f2a";
+        ctx.beginPath(); ctx.arc(6.4, -7.5, 0.8, 0, Math.PI * 2); ctx.fill();          // eye
+        ctx.restore();
+    }
+}
+
+class Butterfly {               // flits about in the warmer seasons
+    constructor() {
+        this.x = rand(0, W); this.y = rand(horizonY + 20, H - 60);
+        this.phase = rand(0, 6.3);
+        this.col = pick(["#ff9bd0", "#ffd166", "#a6e3ff", "#d6a6ff"]);
+        this.wing = rand(0, 6.3);
+    }
+    update(dt) {
+        this.x += Math.cos(vtime * 0.7 + this.phase) * 22 * dt + 8 * dt;
+        this.y += Math.sin(vtime * 1.3 + this.phase) * 18 * dt;
+        this.wing += dt * 18;
+        if (this.x > W + 20) this.x = -20;
+        if (this.y < horizonY + 10) this.y = horizonY + 10;
+        if (this.y > H - 40) this.y = H - 40;
+    }
+    draw() {
+        const f = Math.abs(Math.sin(this.wing)) * 0.8 + 0.2;
+        ctx.fillStyle = this.col;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(f, 1);
+        ctx.beginPath(); ctx.ellipse(-2, 0, 2.4, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(2, 0, 2.4, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+}
+
 // ================================================================
 //  WORLD GENERATION & AMBIENT DECOR
 // ================================================================
-let decor = [], clouds = [], stars = [], fireflies = [], rainStreaks = [];
+let decor = [], clouds = [], stars = [], fireflies = [], rainStreaks = [], snowFlakes = [];
 let vignette = null;
 
 function genWorldDecor() {
@@ -1099,6 +1399,10 @@ function genWorldDecor() {
     for (let i = 0; i < 110; i++) {
         rainStreaks.push({ x: rand(0, W), y: rand(-H, 0), v: rand(380, 560), len: rand(10, 17) });
     }
+    snowFlakes = [];
+    for (let i = 0; i < 90; i++) {
+        snowFlakes.push({ x: rand(0, W), y: rand(0, H), v: rand(20, 45), r: rand(1, 2.6), drift: rand(0, 6.3) });
+    }
     vignette = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.45, W / 2, H / 2, Math.max(W, H) * 0.75);
     vignette.addColorStop(0, "rgba(0,0,0,0)");
     vignette.addColorStop(1, "rgba(20,30,50,0.22)");
@@ -1132,12 +1436,28 @@ function placeBuilding(type, x, y) {
 }
 
 function placeNature(type, x, y) {
-    if (!isOpenSpot(x, y, false)) { sfx("error"); notify("Can't place that there!"); return false; }
+    if (!isOpenSpot(x, y, false)) { if (!painting) sfx("error"); return false; }
     const r = new Resource(x, y, type);
     r.wobble = 1;
     resourcesNodes.push(r);
     spawnChips(x, y - 10, type === "tree" ? "#4cd967" : "#c2c7cf", "spark", 6);
-    sfx("pop");
+    sfx("pop", 90);
+    return true;
+}
+
+let pathWarned = false;
+function placePath(x, y) {
+    if (y < horizonY + 12 || y > H - 20) return false;
+    const cx = Math.floor(x / PATH_CELL), cy = Math.floor(y / PATH_CELL);
+    const key = cellKey(cx, cy);
+    if (pathCells.has(key)) return false;            // already paved
+    if (resources.stone < 1) {
+        if (!pathWarned) { sfx("error"); notify("Out of stone for paths"); pathWarned = true; }
+        return false;
+    }
+    resources.stone -= 1;
+    pathCells.set(key, { x: cx * PATH_CELL + PATH_CELL / 2, y: cy * PATH_CELL + PATH_CELL / 2, born: vtime });
+    sfx("place", 80);
     return true;
 }
 
@@ -1146,8 +1466,12 @@ function tryAutoBuild() {
     if (!autoGrow) return;
     if (buildings.filter(b => !b.complete).length >= 2) return;
 
+    const farms = buildings.filter(b => b.type === "farm").length;
+    const needFood = resources.food < villagers.length * 3 || farms * 2 < villagers.length;
     let type = null;
-    if (villagers.length >= popCap - 1 && afford(BUILDS.house.cost)) {
+    if (needFood && afford(BUILDS.farm.cost)) {
+        type = "farm";
+    } else if (villagers.length >= popCap - 1 && afford(BUILDS.house.cost)) {
         type = "house";
     } else {
         const camps = buildings.filter(b => b.type === "lumber").length;
@@ -1236,9 +1560,17 @@ function scatterNature() {
     }
 }
 
+function spawnWildlife() {
+    birds = []; critters = []; butterflies = [];
+    for (let i = 0; i < 4; i++) birds.push(new Bird());
+    const nRabbits = clamp(Math.round(W / 320), 3, 7);
+    for (let i = 0; i < nRabbits; i++) critters.push(new Critter(rand(40, W - 40), rand(horizonY + 30, H - 40)));
+    for (let i = 0; i < 5; i++) butterflies.push(new Butterfly());
+}
+
 function reset() {
     villagers = []; resourcesNodes = []; buildings = []; floating = []; particles = [];
-    resources = { wood: 20, stone: 10 };
+    resources = { wood: 20, stone: 10, food: 12 };
     popCap = 5;
     gameTime = 0;
     buildTick = 0; popTick = 0;
@@ -1247,10 +1579,17 @@ function reset() {
     nextEventIn = rand(45, 70);
     rainAmt = harvestAmt = partyAmt = 0;
     capHintShown = false;
+    hungry = false; pathWarned = false;
     placement = null;
+    pathCells.clear();
+    seasonI = 0;
+    seasonGrass = SEASONS[0].grassRgb.slice();
+    seasonLeaf = SEASONS[0].leafRgb.slice();
+    snowAmt = 0; respawnMult = SEASONS[0].respawn; cropMult = SEASONS[0].crop;
     storage.x = clamp(150, 90, W - 90);
     storage.y = H - 150;
     scatterNature();
+    spawnWildlife();
     for (let i = 0; i < 3; i++) {
         villagers.push(new Villager(storage.x + rand(-34, 34), storage.y + rand(22, 50)));
     }
@@ -1284,8 +1623,9 @@ addEventListener("resize", resize);
 // ================================================================
 function setPlacement(kind, type) {
     if (placement && placement.type === type) { placement = null; return; }
-    const ghost = kind === "build" ? new Building(0, 0, type) : new Resource(0, 0, type);
-    if (kind === "build") { ghost.complete = true; ghost.ghostAlpha = 0.55; }
+    let ghost = null;
+    if (kind === "build") { ghost = new Building(0, 0, type); ghost.complete = true; ghost.ghostAlpha = 0.55; }
+    else if (kind === "nature") { ghost = new Resource(0, 0, type); }
     placement = { kind, type, ghost };
     sfx("click");
 }
@@ -1294,8 +1634,10 @@ function cancelPlacement() { placement = null; }
 ui.buildHouseBtn.onclick  = () => setPlacement("build", "house");
 ui.buildLumberBtn.onclick = () => setPlacement("build", "lumber");
 ui.buildQuarryBtn.onclick = () => setPlacement("build", "quarry");
+ui.buildFarmBtn.onclick   = () => setPlacement("build", "farm");
 ui.treeBtn.onclick = () => setPlacement("nature", "tree");
 ui.rockBtn.onclick = () => setPlacement("nature", "rock");
+ui.pathBtn.onclick = () => setPlacement("path", "path");
 
 const autoStateEl = ui.autoBtn.querySelector(".tcost");
 ui.autoBtn.onclick = () => {
@@ -1355,28 +1697,32 @@ ui.resetBtn.onclick = () => {
 canvas.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true; });
 canvas.addEventListener("mouseleave", () => { mouse.inside = false; });
 
-canvas.addEventListener("click", e => {
-    // use the event's own coordinates — the original used the last
-    // mousemove position, which is (0,0) until the mouse first moves
-    const x = e.clientX, y = e.clientY;
-    mouse.x = x; mouse.y = y; mouse.inside = true;
+// --- placement painting & single-click actions (pointer-driven, so trees,
+//     rocks and paths can be click-dragged like a brush) ---
+let painting = false, dragMoved = false, downPos = null, lastPaint = null;
+const PAINT_SPACING = 28;
 
-    if (placement) {
-        if (placement.kind === "build") placeBuilding(placement.type, x, y);
-        else placeNature(placement.type, x, y);
-        return; // stays active for easy multi-placement; Esc / right-click cancels
-    }
-    // poke a villager
-    for (const v of villagers) {
-        if (dist(v.x, v.y - 10, x, y) < 13) {
-            v.jumpT = 1;
-            emote(v.x, v.y - 30, "❤️");
-            sfx("jump");
+function paintAt(x, y) {
+    if (!placement) return;
+    if (placement.kind === "build") { placeBuilding(placement.type, x, y); return; }
+    if (placement.kind === "path")  { placePath(x, y); return; }
+    placeNature(placement.type, x, y);
+}
+function paintLine(from, to) {
+    const d = dist(from.x, from.y, to.x, to.y);
+    const step = placement.kind === "path" ? PATH_CELL * 0.55 : PAINT_SPACING;
+    const n = Math.max(1, Math.round(d / step));
+    for (let i = 1; i <= n; i++) paintAt(lerp(from.x, to.x, i / n), lerp(from.y, to.y, i / n));
+}
+
+function singleClick(x, y) {
+    for (const v of villagers) {                 // poke a villager
+        if (dist(v.x, v.y - 10, x, y) < 14) {
+            v.jumpT = 1; emote(v.x, v.y - 30, "❤️"); sfx("jump");
             return;
         }
     }
-    // gather by hand
-    for (const r of resourcesNodes) {
+    for (const r of resourcesNodes) {            // gather by hand
         if (r.hp > 0 && dist(r.x, r.y - 8, x, y) < 25) {
             r.harvest();
             const kind = r.type === "tree" ? "wood" : "stone";
@@ -1384,10 +1730,36 @@ canvas.addEventListener("click", e => {
             floatText(x, y - 18, kind === "wood" ? "+1 🪵" : "+1 🪨", kind === "wood" ? "#7a4f22" : "#525866");
             if (r.type === "tree") { spawnChips(r.x, r.y - 26, "#5fb558", "leaf", 3); sfx("chop"); }
             else { spawnChips(r.x, r.y - 10, "#c2c7cf", "chip", 3); sfx("mine"); }
-            break;
+            return;
         }
     }
+}
+
+canvas.addEventListener("pointerdown", e => {
+    if (e.button === 2) return;                  // right button cancels via contextmenu
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true;
+    painting = true; dragMoved = false; pathWarned = false;
+    downPos = { x: e.clientX, y: e.clientY };
+    lastPaint = downPos;
+    if (placement) paintAt(e.clientX, e.clientY);
 });
+canvas.addEventListener("pointermove", e => {
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true;
+    if (!painting) return;
+    if (dist(e.clientX, e.clientY, downPos.x, downPos.y) > 5) dragMoved = true;
+    // only nature & paths paint along a drag; buildings stay single-placement
+    if (placement && (placement.kind === "nature" || placement.kind === "path")) {
+        paintLine(lastPaint, { x: e.clientX, y: e.clientY });
+        lastPaint = { x: e.clientX, y: e.clientY };
+    }
+});
+function endPaint() {
+    if (!painting) return;
+    painting = false;
+    if (!placement && !dragMoved && downPos) singleClick(downPos.x, downPos.y);
+}
+addEventListener("pointerup", endPaint);
+addEventListener("pointercancel", () => { painting = false; });
 
 canvas.addEventListener("contextmenu", e => {
     if (placement) { e.preventDefault(); cancelPlacement(); }
@@ -1406,8 +1778,10 @@ addEventListener("keydown", e => {
     else if (k === "h") setPlacement("build", "house");
     else if (k === "l") setPlacement("build", "lumber");
     else if (k === "q") setPlacement("build", "quarry");
+    else if (k === "f") setPlacement("build", "farm");
     else if (k === "t") setPlacement("nature", "tree");
     else if (k === "r") setPlacement("nature", "rock");
+    else if (k === "p") setPlacement("path", "path");
     else if (k === "a") ui.autoBtn.onclick();
     else if (k === "m") ui.soundBtn.onclick();
 });
@@ -1440,13 +1814,15 @@ function setTextBump(el, v) {
 function updateHUD() {
     setTextBump(ui.wood, String(Math.floor(resources.wood)));
     setTextBump(ui.stone, String(Math.floor(resources.stone)));
+    setTextBump(ui.food, String(Math.floor(resources.food)));
+    ui.food.classList.toggle("danger", hungry || resources.food < 5);
     setTextBump(ui.pop, String(villagers.length));
     setText(ui.cap, String(popCap));
     ui.popBar.style.width = (villagers.length >= popCap ? 100 : clamp(popTick / POP_INTERVAL, 0, 1) * 100) + "%";
 
     const dayT = (gameTime % DAY_LEN) / DAY_LEN;
     const phase = dayT < 0.1 ? "🌅" : dayT < 0.6 ? "☀️" : dayT < 0.72 ? "🌇" : "🌙";
-    setText(ui.day, `${phase} Day ${Math.floor(gameTime / DAY_LEN) + 1}`);
+    setText(ui.day, `${seasonNow().icon}${phase} Day ${Math.floor(gameTime / DAY_LEN) + 1}`);
 
     if (currentEvent === "None") {
         setText(ui.eventIcon, "🌤️");
@@ -1466,6 +1842,8 @@ function updateHUD() {
     }
     ui.treeBtn.classList.toggle("active", !!placement && placement.type === "tree");
     ui.rockBtn.classList.toggle("active", !!placement && placement.type === "rock");
+    ui.pathBtn.classList.toggle("active", !!placement && placement.type === "path");
+    ui.pathBtn.classList.toggle("unafford", resources.stone < 1);
     ui.autoBtn.classList.toggle("active", autoGrow);
     ui.pauseBtn.classList.toggle("active", speed === 0);
     ui.speed1.classList.toggle("active", speed === 1);
@@ -1479,6 +1857,22 @@ function updateHUD() {
 //  UPDATE
 // ================================================================
 function approach(cur, target, maxStep) { return cur + clamp(target - cur, -maxStep, maxStep); }
+
+function updateSeason(dt) {
+    const idx = Math.floor(gameTime / SEASON_LEN) % 4;
+    if (idx !== seasonI) {
+        seasonI = idx;
+        notify(`${SEASONS[idx].icon} ${SEASONS[idx].name} has arrived`);
+        sfx("event");
+    }
+    const s = SEASONS[idx];
+    const e = clamp(dt * 0.7, 0, 1);
+    seasonGrass = lerpRgb(seasonGrass, s.grassRgb, e);
+    seasonLeaf  = lerpRgb(seasonLeaf,  s.leafRgb,  e);
+    snowAmt     = approach(snowAmt, idx === 3 ? 1 : 0, dt * 0.5);
+    respawnMult = approach(respawnMult, s.respawn, dt);
+    cropMult    = approach(cropMult, s.crop, dt);
+}
 
 function update(dt) {
     const sdt = dt * speed;
@@ -1500,12 +1894,29 @@ function update(dt) {
     rainAmt = approach(rainAmt, currentEvent === "Rain" ? 1 : 0, dt * 1.1);
     harvestAmt = approach(harvestAmt, currentEvent === "Harvest" ? 1 : 0, dt * 1.1);
     partyAmt = approach(partyAmt, currentEvent === "Celebration" ? 1 : 0, dt * 1.1);
+    updateSeason(dt);
+
+    // food economy: villagers steadily eat; farms refill the larder
+    if (villagers.length > 0) {
+        resources.food = Math.max(0, resources.food - sdt * villagers.length * (FOOD_PER_DAY / DAY_LEN));
+    }
+    const wasHungry = hungry;
+    hungry = villagers.length > 0 && resources.food <= 0.01;
+    if (hungry && !wasHungry) notify("🍽️ The larder is empty — villagers are hungry and slow");
+    else if (!hungry && wasHungry) notify("😊 Bellies are full again");
 
     storageWobble = Math.max(0, storageWobble - sdt * 2.2);
 
     for (const r of resourcesNodes) r.update(sdt);
     for (const b of buildings) b.update(sdt);
     for (const v of villagers) v.update(sdt);
+
+    // wildlife (ambient)
+    for (const b of birds) b.update(sdt);
+    birds = birds.filter(b => !b.offscreen());
+    while (birds.length < 4 && Math.random() < sdt * 0.5) birds.push(new Bird());
+    for (const c of critters) c.update(sdt);
+    if (seasonI !== 3) for (const bf of butterflies) bf.update(sdt);
 
     particles = particles.filter(p => p.life > 0);
     for (const p of particles) p.update(sdt);
@@ -1627,10 +2038,13 @@ function draw(dt) {
     }
     ctx.globalAlpha = 1;
 
-    // distant hills
+    // birds drifting across the sky
+    for (const b of birds) b.draw();
+
+    // distant hills (lightly tinted toward the season so winter pales them)
     const hillCols = [
-        rgbStr(lerpRgb(hexRgb("#74ad55"), hexRgb("#5d8a4a"), rainAmt)),
-        rgbStr(lerpRgb(hexRgb("#86bd62"), hexRgb("#6a9a55"), rainAmt)),
+        rgbStr(lerpRgb(lerpRgb(hexRgb("#74ad55"), seasonGrass, 0.4), hexRgb("#5d8a4a"), rainAmt)),
+        rgbStr(lerpRgb(lerpRgb(hexRgb("#86bd62"), seasonGrass, 0.4), hexRgb("#6a9a55"), rainAmt)),
     ];
     for (let layer = 0; layer < 2; layer++) {
         ctx.fillStyle = hillCols[layer];
@@ -1647,9 +2061,9 @@ function draw(dt) {
         ctx.fill();
     }
 
-    // ground
-    const grassTop = lerpRgb(hexRgb("#92c75c"), hexRgb("#6f9a54"), rainAmt);
-    const grassBot = lerpRgb(hexRgb("#74b047"), hexRgb("#577f43"), rainAmt);
+    // ground (season-tinted, darkened a touch by rain)
+    const grassTop = lerpRgb(seasonGrass, [104, 124, 140], rainAmt * 0.45);
+    const grassBot = lerpRgb(seasonGrass.map(c => c * 0.82), [88, 110, 92], rainAmt * 0.45);
     const gg = ctx.createLinearGradient(0, horizonY, 0, H);
     gg.addColorStop(0, rgbStr(grassTop));
     gg.addColorStop(1, rgbStr(grassBot));
@@ -1678,6 +2092,18 @@ function draw(dt) {
         }
     }
 
+    // paths — dirt tiles painted on the grass; overlapping tiles read as a road
+    if (pathCells.size) {
+        for (const c of pathCells.values()) {
+            const pop = clamp((vtime - c.born) * 5, 0, 1);
+            const w = PATH_CELL * 1.14 * pop, h = PATH_CELL * 0.88 * pop;
+            ctx.fillStyle = "#b58c5f";
+            ctx.beginPath(); ctx.roundRect(c.x - w / 2, c.y - h / 2, w, h, 5); ctx.fill();
+            ctx.fillStyle = "rgba(120,90,55,0.45)";
+            ctx.beginPath(); ctx.ellipse(c.x - 3, c.y + 1, w * 0.22, h * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+
     // hover highlight ring
     if (hoverNode) {
         const pulse = 1 + Math.sin(vtime * 6) * 0.07;
@@ -1688,9 +2114,10 @@ function draw(dt) {
         ctx.stroke();
     }
 
-    // entities, depth-sorted
+    // entities, depth-sorted (rabbits & butterflies join the sort so they tuck behind trees)
     const storageProxy = { get y() { return storage.y; }, draw: drawStorage };
-    const entities = [...resourcesNodes, ...buildings, ...villagers, storageProxy];
+    const entities = [...resourcesNodes, ...buildings, ...villagers, ...critters, storageProxy];
+    if (seasonI !== 3) for (const bf of butterflies) entities.push(bf);
     entities.sort((a, b) => a.y - b.y);
     for (const e of entities) e.draw();
 
@@ -1716,6 +2143,19 @@ function draw(dt) {
     if (harvestAmt > 0.02) {
         ctx.fillStyle = `rgba(255,214,100,${harvestAmt * 0.08})`;
         ctx.fillRect(0, 0, W, H);
+    }
+    // winter snow: pale wash over the ground + drifting flakes
+    if (snowAmt > 0.02) {
+        ctx.fillStyle = `rgba(255,255,255,${snowAmt * 0.16})`;
+        ctx.fillRect(0, horizonY, W, H - horizonY);
+        ctx.fillStyle = `rgba(255,255,255,${snowAmt * 0.9})`;
+        for (const f of snowFlakes) {
+            f.y += f.v * dt;
+            f.x += Math.sin(vtime * 0.6 + f.drift) * 11 * dt;
+            if (f.y > H) { f.y = -5; f.x = rand(0, W); }
+            if (f.x > W + 5) f.x = -5; else if (f.x < -5) f.x = W + 5;
+            ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+        }
     }
 
     // --- night
@@ -1746,22 +2186,35 @@ function draw(dt) {
         }
     }
 
-    // --- placement ghost
+    // hovered villager's name + activity bubble (on top of the scene)
+    if (hoverVillager && villagers.includes(hoverVillager)) drawThoughtBubble(hoverVillager);
+
+    // --- placement ghost / preview
     if (placement && mouse.inside) {
-        const forBuild = placement.kind === "build";
-        const ok = isOpenSpot(mouse.x, mouse.y, forBuild);
-        const g = placement.ghost;
-        g.x = mouse.x; g.y = mouse.y;
-        ctx.globalAlpha = 0.55;
-        g.draw();
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = ok ? "rgba(80,220,130,0.95)" : "rgba(255,95,95,0.95)";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 5]);
-        ctx.beginPath();
-        ctx.ellipse(mouse.x, mouse.y + 2, forBuild ? 30 : 20, forBuild ? 13 : 9, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        if (placement.kind === "path") {
+            const cx = Math.floor(mouse.x / PATH_CELL), cy = Math.floor(mouse.y / PATH_CELL);
+            const ok = resources.stone >= 1 && !pathCells.has(cellKey(cx, cy)) && mouse.y > horizonY + 12 && mouse.y < H - 20;
+            const px = cx * PATH_CELL + PATH_CELL / 2, py = cy * PATH_CELL + PATH_CELL / 2;
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = ok ? "#b58c5f" : "#c46868";
+            ctx.beginPath(); ctx.roundRect(px - PATH_CELL * 0.57, py - PATH_CELL * 0.44, PATH_CELL * 1.14, PATH_CELL * 0.88, 5); ctx.fill();
+            ctx.globalAlpha = 1;
+        } else {
+            const forBuild = placement.kind === "build";
+            const ok = isOpenSpot(mouse.x, mouse.y, forBuild);
+            const g = placement.ghost;
+            g.x = mouse.x; g.y = mouse.y;
+            ctx.globalAlpha = 0.55;
+            g.draw();
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = ok ? "rgba(80,220,130,0.95)" : "rgba(255,95,95,0.95)";
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 5]);
+            ctx.beginPath();
+            ctx.ellipse(mouse.x, mouse.y + 2, forBuild ? 30 : 20, forBuild ? 13 : 9, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
     }
 
     // gentle vignette
@@ -1801,12 +2254,19 @@ window.TK = {
     get popCap() { return popCap; },
     get event() { return currentEvent; },
     get time() { return gameTime; },
+    set time(v) { gameTime = v; },
     get speed() { return speed; },
     set speed(v) { speed = v; },
     get placement() { return placement; },
     get autoGrow() { return autoGrow; },
+    get hungry() { return hungry; },
+    get season() { return seasonNow().name; },
+    get seasonIndex() { return seasonI; },
+    get paths() { return pathCells; },
+    get critters() { return critters; },
+    get birds() { return birds; },
     forceEvent: startEvent,
-    placeBuilding, placeNature, reset,
+    setPlacement, placeBuilding, placeNature, placePath, reset,
 };
 </script>
 </body>
