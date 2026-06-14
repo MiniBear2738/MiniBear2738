@@ -7,9 +7,12 @@
 <style>
     * { box-sizing: border-box; }
     :root {
-        --panel-bg: rgba(255,255,255,0.92);
-        --ink: #2d3142;
+        --panel-bg: rgba(255,251,240,0.95);
+        --ink: #3a2f22;
         --accent: #55c775;
+        --gold: #c79a3e;
+        --gold-lt: #ecd28a;
+        --gold-dk: #8a6a25;
     }
     body {
         margin: 0;
@@ -36,12 +39,13 @@
     .hud-side { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
     .panel {
         pointer-events: auto;
-        background: var(--panel-bg);
-        border-radius: 14px;
-        padding: 9px 14px;
-        box-shadow: 0 6px 20px rgba(20,40,80,0.18), inset 0 1px 0 rgba(255,255,255,0.8);
+        position: relative;
+        background: linear-gradient(165deg, rgba(255,251,242,0.96), rgba(250,240,218,0.95));
+        border-radius: 13px;
+        padding: 9px 15px;
+        box-shadow: 0 7px 20px rgba(60,42,15,0.2), inset 0 0 0 2px rgba(255,255,255,0.45);
         backdrop-filter: blur(8px);
-        border: 1px solid rgba(255,255,255,0.5);
+        border: 1.5px solid var(--gold);
         display: flex;
         align-items: center;
         gap: 14px;
@@ -53,12 +57,47 @@
     @keyframes bump { 35% { transform: scale(1.35); } }
     .val.danger { color: #c0392b; }
 
+    /* gilded title crest with a faintly cracked crown */
     #title.panel {
-        font-weight: 800; letter-spacing: 0.5px; font-size: 15px;
-        background: linear-gradient(160deg, #fff6dd, #ffe9b3);
-        color: #7a5b16;
-        padding: 9px 18px;
+        font-weight: 900; letter-spacing: 0.5px; font-size: 16px;
+        background: linear-gradient(160deg, #fff6dd, #ffe6a8);
+        border-color: var(--gold-dk);
+        padding: 8px 22px;
+        gap: 8px;
+        text-shadow: 0 1px 0 rgba(255,255,255,0.6);
     }
+    #title .crest {
+        font-size: 20px;
+        filter: drop-shadow(0 1px 1px rgba(120,80,20,0.5));
+        position: relative;
+    }
+    /* the "crack" — a thin diagonal split across the crown */
+    #title .crest::after {
+        content: "";
+        position: absolute; left: 52%; top: 8%;
+        width: 1.5px; height: 80%;
+        background: linear-gradient(180deg, rgba(70,45,10,0), rgba(70,45,10,0.55) 40%, rgba(70,45,10,0));
+        transform: rotate(14deg);
+        pointer-events: none;
+    }
+    #title .crest-txt {
+        background: linear-gradient(180deg, #a87b1e, #7a5b16);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: #7a5b16;
+    }
+    /* corner ornaments on the title */
+    #title::before, #title::after {
+        content: ""; position: absolute; width: 9px; height: 9px;
+        border: 1.5px solid var(--gold-dk); pointer-events: none; opacity: 0.7;
+    }
+    #title::before { top: 3px; left: 3px; border-right: none; border-bottom: none; border-top-left-radius: 6px; }
+    #title::after  { bottom: 3px; right: 3px; border-left: none; border-top: none; border-bottom-right-radius: 6px; }
+
+    /* faith / devotion meter */
+    #faithWrap { display: flex; flex-direction: column; gap: 3px; }
+    #faithBarOuter { display: block; width: 74px; height: 5px; background: rgba(0,0,0,0.14); border-radius: 3px; overflow: hidden; }
+    #faithBar { display: block; height: 100%; width: 60%; background: linear-gradient(90deg,#caa6f0,#9d6fe0); border-radius: 3px; transition: width 0.3s linear; }
+    #faithBar.low { background: linear-gradient(90deg,#e88,#c0392b); }
 
     #popWrap { display: flex; flex-direction: column; gap: 3px; }
     #popBarOuter { display: block; width: 74px; height: 5px; background: rgba(0,0,0,0.12); border-radius: 3px; overflow: hidden; }
@@ -261,11 +300,14 @@
             <span class="stat">👥 <span id="popWrap"><span><span class="val" id="pop">3</span>/<span id="cap">5</span></span>
                 <span id="popBarOuter"><span id="popBar"></span></span></span>
             </span>
+            <span class="stat">🙏 <span id="faithWrap"><span><span class="val" id="faith">60</span></span>
+                <span id="faithBarOuter"><span id="faithBar"></span></span></span>
+            </span>
             <span class="stat"><span id="day">☀️ Day 1</span></span>
         </div>
     </div>
 
-    <div id="title" class="panel">👑 Tiny Kingdom</div>
+    <div id="title" class="panel"><span class="crest">👑</span><span class="crest-txt">Tiny Kingdom</span></div>
 
     <div class="hud-side">
         <div class="panel" id="eventPanel">
@@ -329,12 +371,14 @@
             <li><b>Houses</b> raise the population cap; <b>lumber camps / quarries</b> speed gathering; <b>farms</b> 🌾 grow food; <b>campfires</b> 🔥 give villagers somewhere to rest.</li>
             <li><b>Food</b> is eaten a little each day. If it runs out villagers don't starve — they just get hungry and slow. Build farms, and villagers will tend them for extra food.</li>
             <li><b>Night & rest</b>: when it gets dark villagers down tools and gather at a campfire or house to sleep, then rush back out at dawn.</li>
-            <li><b>Villagers specialise</b>: chop, mine or farm enough and they become a 🪓 Lumberjack, ⛏️ Miner or 🌾 Farmer — dressing the part and working 40% faster.</li>
-            <li><b>Plant trees & rocks</b>, paint <b>paths</b> 🛤️ (1🪨, +20% speed), and scatter <b>decor</b> — 🚧 fences, 🌷 flowers and 🏮 lanterns that glow at night. <b>Click-drag</b> any of these like a brush.</li>
+            <li><b>Villagers specialise</b>: chop, mine or farm enough and they become a 🪓 Lumberjack, ⛏️ Miner or 🌾 Farmer — dressing the part and working 40% faster. Each also has random <b>traits</b> (🏃 Speedy, 💪 Strong, 🦉 Night Owl, 🌱 Green Thumb, 😄 Cheerful) — hover to see them.</li>
+            <li><b>🙏 Faith</b> rises when villagers rest by warm light and falls if they're hungry or sleep in the dark. Keep it up and everyone works briskly; let it crash and work slows — and someone may even leave.</li>
+            <li><b>Light the dark</b>: at night shadows creep across unlit ground. Campfires, house windows and 🏮 lanterns hold them back — light near where villagers sleep keeps their faith high.</li>
+            <li><b>Plant trees & rocks</b>, paint <b>paths</b> 🛤️ (1🪨, +20% speed), and scatter <b>decor</b> — 🚧 fences, 🌷 flowers and 🏮 lanterns. <b>Click-drag</b> any of these like a brush.</li>
             <li><b>🎈 A traveling merchant</b> visits every 7 days — click the balloon to swap surplus wood, stone and food before it drifts away.</li>
-            <li><b>🏛️ The Grand Monument</b> (200🪵 200🪨) takes days of work, but finishing it wins the game with a permanent celebration — then play on as long as you like.</li>
-            <li><b>Seasons</b> drift by — 🌸 spring, ☀️ summer, 🍂 autumn, ❄️ winter — recolouring the world. Crops race in summer; nature regrows slowly under snow.</li>
-            <li><b>Auto-grow</b> lets villagers plan and fund new buildings themselves — turn it off for full control.</li>
+            <li><b>🏛️ The Grand Monument</b> (cost scales as you build, base 200🪵 200🪨) takes days of work, but finishing it wins the game with a permanent celebration — then play on as long as you like.</li>
+            <li><b>Seasons</b> drift by — 🌸 spring, ☀️ summer, 🍂 autumn, ❄️ winter. Each new building of a kind costs a little more, so growth stays balanced.</li>
+            <li><b>Auto-grow</b> lets villagers plan and fund new buildings themselves — turn it off for full control. Your kingdom <b>autosaves</b>, so you can close the tab and come back later.</li>
         </ul>
         <h3>Keys</h3>
         <div class="keys">
@@ -360,7 +404,7 @@ const ctx = canvas.getContext("2d");
 const msgContainer = document.getElementById("messages");
 
 const ui = {};
-for (const id of ["wood","stone","food","pop","cap","popBar","day","eventIcon","eventName","eventDesc","eventBar",
+for (const id of ["wood","stone","food","pop","cap","popBar","faith","faithBar","day","eventIcon","eventName","eventDesc","eventBar",
                   "pauseBtn","speed1","speed2","speed4","soundBtn","helpBtn","resetBtn",
                   "buildHouseBtn","buildLumberBtn","buildQuarryBtn","buildFarmBtn","buildCampfireBtn","buildMonumentBtn",
                   "treeBtn","rockBtn","pathBtn","fenceBtn","flowerBtn","lanternBtn","autoBtn",
@@ -475,12 +519,20 @@ let won = false, fireworkTimer = 0;
 let nightGlow = 0;               // 0..1 darkness, drives lantern/campfire light
 function lanternGlow() { return nightGlow; }
 
+// devotion / faith: a kingdom-wide morale meter (0..100)
+let devotion = 60;
+let dissentTimer = 0;            // counts up while morale is critically low
+let lowFaithWarned = false;
+
 const storage = { x: 150, y: 300 };
 const POP_INTERVAL = 20, AUTO_INTERVAL = 18, DAY_LEN = 120;
 const FOOD_PER_DAY = 1;          // food eaten per villager per in-game day
 const FARM_YIELD = 3;            // food produced each time a crop ripens
 const FARM_HARVEST = 1.6;        // food a villager hand-harvests from a farm
 const MERCHANT_EVERY = 7;        // a merchant visits every N days
+const SAVE_KEY = "tinyKingdomSave";
+const SAVE_VERSION = 2;          // bump to invalidate incompatible old saves
+const COST_SCALE = 0.18;         // each existing building of a type raises its cost
 
 // ---- traveling merchant ----
 let merchant = null;             // {x, y, vy, phase, timer, leaving} | null
@@ -528,6 +580,16 @@ const PROFESSIONS = {
 };
 const JOB_THRESHOLD = 6;         // successful harvests before a villager specialises
 
+// ---- randomized villager traits (personality + light mechanics) ----
+const TRAITS = {
+    Speedy:    { icon: "🏃", desc: "walks quickly" },
+    Strong:    { icon: "💪", desc: "works fast" },
+    NightOwl:  { icon: "🦉", desc: "works late into the night" },
+    GreenThumb:{ icon: "🌱", desc: "a gifted farmer" },
+    Cheerful:  { icon: "😄", desc: "lifts everyone's spirits" },
+};
+const TRAIT_KEYS = Object.keys(TRAITS);
+
 // weather/event amounts eased toward targets each frame for smooth transitions
 let currentEvent = "None";
 let eventTimer = 0, eventDur = 30, nextEventIn = 60;
@@ -540,12 +602,12 @@ const EVENTS = {
 };
 
 const BUILDS = {
-    house:    { label: "House",       icon: "🏠", cost: { wood: 10 },             btn: "buildHouseBtn" },
-    lumber:   { label: "Lumber Camp", icon: "🪓", cost: { wood: 10, stone: 5 },   btn: "buildLumberBtn" },
-    quarry:   { label: "Quarry",      icon: "⛏️", cost: { stone: 10 },            btn: "buildQuarryBtn" },
-    farm:     { label: "Farm",        icon: "🌾", cost: { wood: 12 },             btn: "buildFarmBtn" },
-    campfire: { label: "Campfire",    icon: "🔥", cost: { wood: 5, stone: 5 },    btn: "buildCampfireBtn" },
-    monument: { label: "Monument",    icon: "🏛️", cost: { wood: 200, stone: 200 }, btn: "buildMonumentBtn", buildSpeed: 0.0016, crew: 6, unique: true },
+    house:    { label: "House",       icon: "🏠", cost: { wood: 10 },             perk: "+2 pop",  btn: "buildHouseBtn" },
+    lumber:   { label: "Lumber Camp", icon: "🪓", cost: { wood: 10, stone: 5 },   perk: "+wood",   btn: "buildLumberBtn" },
+    quarry:   { label: "Quarry",      icon: "⛏️", cost: { stone: 10 },            perk: "+stone",  btn: "buildQuarryBtn" },
+    farm:     { label: "Farm",        icon: "🌾", cost: { wood: 12 },             perk: "+food",   btn: "buildFarmBtn" },
+    campfire: { label: "Campfire",    icon: "🔥", cost: { wood: 5, stone: 5 },    perk: "rest",    btn: "buildCampfireBtn" },
+    monument: { label: "Monument",    icon: "🏛️", cost: { wood: 200, stone: 200 }, perk: "🏆", btn: "buildMonumentBtn", buildSpeed: 0.0016, crew: 6, unique: true },
 };
 
 // purely cosmetic props the player can scatter about
@@ -557,6 +619,86 @@ const DECOR = {
 
 function afford(cost) { return Object.entries(cost).every(([k, v]) => resources[k] >= v); }
 function pay(cost) { for (const k in cost) resources[k] -= cost[k]; }
+
+// scaling costs: each existing building of a type makes the next one pricier,
+// so expansion can't snowball for free (unique builds stay fixed)
+function buildCost(type) {
+    const info = BUILDS[type];
+    if (info.unique) return info.cost;
+    const n = buildings.filter(b => b.type === type).length;
+    const mult = 1 + COST_SCALE * n;
+    const out = {};
+    for (const k in info.cost) out[k] = Math.round(info.cost[k] * mult);
+    return out;
+}
+function costStr(cost) { return Object.entries(cost).map(([k, v]) => v + (RES_ICON[k] || "")).join(" "); }
+
+// each extra farm yields a little less, so food can't snowball endlessly
+function farmEfficiency() {
+    const n = buildings.filter(b => b.complete && b.type === "farm").length;
+    return n <= 1 ? 1 : 1 / (1 + 0.06 * (n - 1));
+}
+
+// devotion (morale) gently sways how fast villagers move & work
+function moraleMove() { return 0.85 + 0.30 * (devotion / 100); }   // 0.85 .. 1.15
+function moraleWork() { return 1.15 - 0.30 * (devotion / 100); }   // slow .. fast
+
+// which part of the day counts as "night" for a given villager (Night Owls stay up later)
+function nightFor(v) {
+    const p = (gameTime % DAY_LEN) / DAY_LEN;
+    if (v.hasTrait && v.hasTrait("NightOwl")) return p >= 0.84 && p < 0.95;
+    return p >= 0.72 && p < 0.97;
+}
+
+// is a point within the warm glow of a light source? (used for rest comfort & shadows)
+function litAt(x, y) {
+    if (dist(x, y, storage.x, storage.y) < 70) return true;
+    for (const b of buildings) {
+        if (!b.complete) continue;
+        if (b.type === "campfire" && dist(x, y, b.x, b.y) < 95) return true;
+        if (b.type === "house" && dist(x, y, b.x, b.y) < 62) return true;
+        if (b.type === "monument" && dist(x, y, b.x, b.y) < 90) return true;
+    }
+    for (const p of props) if (p.type === "lantern" && dist(x, y, p.x, p.y) < 74) return true;
+    return false;
+}
+
+// faith rises when villagers rest by warm light and fall when neglected
+function updateDevotion(sdt) {
+    if (villagers.length === 0) return;
+    let net = -0.15 - villagers.length * 0.012;   // gentle upkeep
+    if (hungry) net -= 0.45;
+    if (won) net += 0.6;
+    if (currentEvent === "Celebration") net += 0.3;
+    if (resources.food > villagers.length * 4) net += 0.05;
+    for (const v of villagers) {
+        if (v.state === "Resting") net += litAt(v.x, v.y) ? 0.22 : -0.12;
+        if (v.hasTrait("Cheerful")) net += 0.05;
+    }
+    devotion = clamp(devotion + net * sdt, 0, 100);
+
+    if (devotion < 20 && !lowFaithWarned) {
+        notify("🙏 Faith is low — light campfires and keep bellies full"); lowFaithWarned = true;
+    } else if (devotion > 35) lowFaithWarned = false;
+
+    // sustained misery makes a villager lose heart and leave (kept rare & cozy)
+    if (devotion < 10 && villagers.length > 3) {
+        dissentTimer += sdt;
+        if (dissentTimer > 25) { dissentTimer = 0; villagerLeaves(); }
+    } else {
+        dissentTimer = Math.max(0, dissentTimer - sdt);
+    }
+}
+function villagerLeaves() {
+    let idx = villagers.findIndex(v => !v.hasTrait("Cheerful"));
+    if (idx < 0) idx = 0;
+    const v = villagers[idx];
+    notify(`💔 ${v.name} lost faith and left the kingdom`);
+    emote(v.x, v.y - 30, "💔");
+    spawnChips(v.x, v.y - 10, "#9d6fe0", "spark", 6);
+    villagers.splice(idx, 1);
+    devotion = clamp(devotion + 12, 0, 100);      // the rest steady themselves
+}
 
 // ================================================================
 //  EFFECT HELPERS
@@ -838,8 +980,9 @@ class Building {
                 if (Math.random() < 0.5) spawnChips(this.x + rand(-3, 3), this.y - 12, pick(["#ff9d3f", "#ffd166"]), "spark", 1);
             }
         } else if (this.type === "farm") {
-            // crops grow over time; faster in summer, barely at all in winter
-            this.crop += dt * 0.05 * cropMult * (currentEvent === "Harvest" ? 1.6 : 1);
+            // crops grow over time; faster in summer, barely in winter, and with
+            // diminishing returns once many farms compete for the same fields
+            this.crop += dt * 0.05 * cropMult * farmEfficiency() * (currentEvent === "Harvest" ? 1.6 : 1);
             if (this.crop >= 1) {
                 this.crop = 0.12;
                 resources.food += FARM_YIELD;
@@ -1117,7 +1260,14 @@ class Villager {
         this.thought = pick(IDLE_THOUGHTS);
         this.woodXP = 0; this.stoneXP = 0; this.farmXP = 0; // experience toward a profession
         this.job = null;                    // null | "Lumberjack" | "Miner" | "Farmer"
+        this.traits = [];                   // 0-2 randomized personality traits
+        if (Math.random() < 0.6) this.traits.push(pick(TRAIT_KEYS));
+        if (Math.random() < 0.22) { const t = pick(TRAIT_KEYS); if (!this.traits.includes(t)) this.traits.push(t); }
+        if (this.hasTrait("Speedy")) this.speed *= 1.32;
+        this.baseSpeed = this.speed;
     }
+    hasTrait(k) { return this.traits.includes(k); }
+    applyJob(job) { this.job = job; this.shirt = PROFESSIONS[job].shirt; }
     // matching profession works its specialty 40% faster
     jobMult(type) {
         if (this.job === "Lumberjack" && type === "tree") return 0.6;
@@ -1125,6 +1275,14 @@ class Villager {
         if (this.job === "Farmer" && type === "farm") return 0.6;
         return 1;
     }
+    // traits that speed up work (Strong: everything, GreenThumb: farming)
+    traitWorkMult(type) {
+        let m = 1;
+        if (this.hasTrait("Strong")) m *= 0.82;
+        if (this.hasTrait("GreenThumb") && type === "farm") m *= 0.7;
+        return m;
+    }
+    workTime(base, type) { return base * this.jobMult(type) * this.traitWorkMult(type) * (hungry ? 1.5 : 1) * moraleWork(); }
     gainXP(type) {
         if (this.job) return;
         if (type === "tree") this.woodXP++;
@@ -1132,11 +1290,11 @@ class Villager {
         else this.farmXP++;
         const best = Math.max(this.woodXP, this.stoneXP, this.farmXP);
         if (best >= JOB_THRESHOLD) {
-            this.job = this.woodXP === best ? "Lumberjack" : this.stoneXP === best ? "Miner" : "Farmer";
-            this.shirt = PROFESSIONS[this.job].shirt;
+            this.applyJob(this.woodXP === best ? "Lumberjack" : this.stoneXP === best ? "Miner" : "Farmer");
             floatText(this.x, this.y - 30, this.name + " → " + this.job + "!", "#2c7a43");
             emote(this.x, this.y - 30, PROFESSIONS[this.job].icon);
             notify(`${PROFESSIONS[this.job].icon} ${this.name} became a ${this.job}!`);
+            devotion = clamp(devotion + 4, 0, 100);   // a promotion lifts spirits
             sfx("join");
         }
     }
@@ -1160,8 +1318,9 @@ class Villager {
         let moving = false;
 
         // when night falls, down tools and head off to rest (carriers finish
-        // their delivery first so nothing is dropped)
-        if (isNight && !this.carry &&
+        // their delivery first so nothing is dropped). Night Owls work later.
+        const myNight = nightFor(this);
+        if (myNight && !this.carry &&
             (this.state === "Walking" || this.state === "Gathering" || this.state === "Mining" ||
              this.state === "Building" || this.state === "GoFarm" || this.state === "Farming")) {
             this.state = "Idle"; this.timer = 0; this.target = null;
@@ -1180,11 +1339,11 @@ class Villager {
                 break;
 
             case "Resting":
-                if (!isNight) {
+                if (!myNight) {
                     this.state = "Idle"; this.timer = rand(0, 0.5); this.jumpT = 0.7;
                     emote(this.x, this.y - 28, "☀️");
                 } else if (Math.random() < dt * 0.25) {
-                    emote(this.x, this.y - 24, "💤");
+                    emote(this.x, this.y - 24, litAt(this.x, this.y) ? "💤" : "😨");
                 }
                 break;
 
@@ -1193,7 +1352,7 @@ class Villager {
                     this.target = null; this.state = "Idle"; break;
                 }
                 moving = this.moveTo(this.dest, moveBonus, dt);
-                if (!moving) { this.state = "Farming"; this.timer = 2.4 * this.jobMult("farm") * (hungry ? 1.5 : 1); this.workAnim = 0; }
+                if (!moving) { this.state = "Farming"; this.timer = this.workTime(2.4, "farm"); this.workAnim = 0; }
                 break;
 
             case "Farming": {
@@ -1206,7 +1365,7 @@ class Villager {
                     spawnChips(f.x + rand(-14, 14), f.y - rand(6, 16), "#e8c24c", "spark", 1);
                 }
                 if (this.timer <= 0) {
-                    const gain = FARM_HARVEST + (this.job === "Farmer" ? 1 : 0);
+                    const gain = FARM_HARVEST + (this.job === "Farmer" ? 1 : 0) + (this.hasTrait("GreenThumb") ? 0.5 : 0);
                     resources.food += gain;
                     f.crop = clamp(f.crop - 0.4, 0.1, 1);
                     this.gainXP("farm");
@@ -1227,7 +1386,7 @@ class Villager {
                 if (!moving) {
                     if (this.target instanceof Resource) {
                         this.state = this.target.type === "tree" ? "Gathering" : "Mining";
-                        this.timer = gatherTime(this.target.type) * this.jobMult(this.target.type) * (hungry ? 1.5 : 1);
+                        this.timer = this.workTime(gatherTime(this.target.type), this.target.type);
                         this.workAnim = 0;
                     } else if (this.target instanceof Building) {
                         this.state = "Building";
@@ -1314,7 +1473,7 @@ class Villager {
         const d = Math.hypot(dx, dy);
         if (Math.abs(dx) > 0.5) this.facing = dx > 0 ? 1 : -1;
         if (d < 5) return false;
-        let mult = bonus;
+        let mult = bonus * moraleMove();    // high morale quickens everyone's step
         if (hungry) mult *= 0.6;            // sluggish on an empty stomach
         if (onPath(this.x, this.y)) mult *= 1.2; // roads speed travel
         const step = Math.min(d, this.speed * mult * dt);
@@ -1324,7 +1483,7 @@ class Villager {
     }
     chooseTask() {
         // 0) at night, head to the nearest campfire or house (or the barn) to rest
-        if (isNight) {
+        if (nightFor(this)) {
             const spots = buildings.filter(b => b.complete && (b.type === "campfire" || b.type === "house"));
             let rt = null;
             for (const b of spots) if (!rt || dist(this.x, this.y, b.x, b.y) < dist(this.x, this.y, rt.x, rt.y)) rt = b;
@@ -1505,16 +1664,18 @@ class Villager {
     }
 }
 
-// villager name + activity bubble, drawn on top of everything when hovered
+// villager name + activity + traits bubble, drawn on top when hovered
 function drawThoughtBubble(v) {
     const name = (v.job ? PROFESSIONS[v.job].icon + " " : "") + v.name;
     const status = v.statusLine();
+    const traitStr = v.traits.map(t => TRAITS[t].icon + " " + t).join("   ");
     ctx.font = "bold 12px system-ui";
     const w1 = ctx.measureText(name).width;
     ctx.font = "11px system-ui";
     const w2 = ctx.measureText(status).width;
-    const w = Math.max(w1, w2) + 18;
-    const h = 34;
+    const w3 = traitStr ? ctx.measureText(traitStr).width : 0;
+    const w = Math.max(w1, w2, w3) + 18;
+    const h = traitStr ? 48 : 34;
     const bx = clamp(v.x, w / 2 + 6, W - w / 2 - 6);
     const by = v.y - 44;
     ctx.save();
@@ -1532,6 +1693,11 @@ function drawThoughtBubble(v) {
     ctx.fillStyle = "#7a7f8f";
     ctx.font = "11px system-ui";
     ctx.fillText(status, bx, by - h + 27);
+    if (traitStr) {
+        ctx.fillStyle = "#a07ad0";
+        ctx.font = "10px system-ui";
+        ctx.fillText(traitStr, bx, by - h + 41);
+    }
     ctx.restore();
 }
 
@@ -1772,7 +1938,7 @@ class Merchant {
 // ================================================================
 //  WORLD GENERATION & AMBIENT DECOR
 // ================================================================
-let decor = [], clouds = [], stars = [], fireflies = [], rainStreaks = [], snowFlakes = [];
+let decor = [], clouds = [], stars = [], fireflies = [], rainStreaks = [], snowFlakes = [], wisps = [];
 let vignette = null;
 
 function genWorldDecor() {
@@ -1811,6 +1977,10 @@ function genWorldDecor() {
     for (let i = 0; i < 90; i++) {
         snowFlakes.push({ x: rand(0, W), y: rand(0, H), v: rand(20, 45), r: rand(1, 2.6), drift: rand(0, 6.3) });
     }
+    wisps = [];     // drifting shadows that creep in unlit ground at night
+    for (let i = 0; i < 14; i++) {
+        wisps.push({ x: rand(0, W), y: rand(horizonY + 40, H - 30), vx: rand(-8, 8), vy: rand(-4, 4), phase: rand(0, 6.3), r: rand(14, 26) });
+    }
     vignette = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.45, W / 2, H / 2, Math.max(W, H) * 0.75);
     vignette.addColorStop(0, "rgba(0,0,0,0)");
     vignette.addColorStop(1, "rgba(20,30,50,0.22)");
@@ -1837,9 +2007,10 @@ function placeBuilding(type, x, y) {
     if (info.unique && buildings.some(b => b.type === type)) {
         sfx("error"); notify(`Only one ${info.label} can be built!`); return false;
     }
-    if (!afford(info.cost)) { sfx("error"); notify("Not enough resources!"); return false; }
+    const cost = buildCost(type);
+    if (!afford(cost)) { sfx("error"); notify("Not enough resources!"); return false; }
     if (!isOpenSpot(x, y, true)) { sfx("error"); notify("Can't build there!"); return false; }
-    pay(info.cost);
+    pay(cost);
     buildings.push(new Building(x, y, type));
     spawnChips(x, y - 6, "#d8c08a", "chip", 8);
     sfx("place");
@@ -1895,18 +2066,18 @@ function tryAutoBuild() {
     const farms = buildings.filter(b => b.type === "farm").length;
     const needFood = resources.food < villagers.length * 3 || farms * 2 < villagers.length;
     let type = null;
-    if (needFood && afford(BUILDS.farm.cost)) {
+    if (needFood && afford(buildCost("farm"))) {
         type = "farm";
-    } else if (villagers.length >= popCap - 1 && afford(BUILDS.house.cost)) {
+    } else if (villagers.length >= popCap - 1 && afford(buildCost("house"))) {
         type = "house";
     } else {
         const camps = buildings.filter(b => b.type === "lumber").length;
         const quarries = buildings.filter(b => b.type === "quarry").length;
         const prefer = camps <= quarries ? "lumber" : "quarry";
         const other = prefer === "lumber" ? "quarry" : "lumber";
-        if (afford(BUILDS[prefer].cost)) type = prefer;
-        else if (afford(BUILDS[other].cost)) type = other;
-        else if (afford(BUILDS.house.cost) && villagers.length >= popCap - 2) type = "house";
+        if (afford(buildCost(prefer))) type = prefer;
+        else if (afford(buildCost(other))) type = other;
+        else if (afford(buildCost("house")) && villagers.length >= popCap - 2) type = "house";
     }
     if (!type) return;
 
@@ -1920,7 +2091,7 @@ function tryAutoBuild() {
         const x = cx + Math.cos(a) * radius;
         const y = cy + Math.sin(a) * radius * 0.7;
         if (isOpenSpot(x, y, true)) {
-            pay(BUILDS[type].cost);
+            pay(buildCost(type));
             buildings.push(new Building(x, y, type));
             notify(`📐 Villagers started a ${BUILDS[type].label.toLowerCase()}`);
             return;
@@ -2047,6 +2218,7 @@ function reset() {
     hungry = false; pathWarned = false;
     isNight = false; nightGlow = 0;
     won = false; fireworkTimer = 0;
+    devotion = 60; dissentTimer = 0; lowFaithWarned = false;
     merchant = null; nextMerchantDay = MERCHANT_EVERY;
     closeMerchant();
     placement = null;
@@ -2179,7 +2351,9 @@ ui.resetBtn.onclick = () => {
         resetArmedAt = 0;
         ui.resetBtn.classList.remove("armed");
         ui.resetBtn.textContent = "Reset";
+        clearSave();
         reset();
+        save();
         notify("🔄 The kingdom starts anew");
         sfx("pop");
     } else {
@@ -2327,6 +2501,9 @@ function updateHUD() {
     setTextBump(ui.pop, String(villagers.length));
     setText(ui.cap, String(popCap));
     ui.popBar.style.width = (villagers.length >= popCap ? 100 : clamp(popTick / POP_INTERVAL, 0, 1) * 100) + "%";
+    setTextBump(ui.faith, String(Math.round(devotion)));
+    ui.faithBar.style.width = clamp(devotion, 0, 100) + "%";
+    ui.faithBar.classList.toggle("low", devotion < 25);
 
     const dayT = (gameTime % DAY_LEN) / DAY_LEN;
     const phase = dayT < 0.1 ? "🌅" : dayT < 0.6 ? "☀️" : dayT < 0.72 ? "🌇" : "🌙";
@@ -2346,8 +2523,12 @@ function updateHUD() {
 
     for (const [type, info] of Object.entries(BUILDS)) {
         const taken = info.unique && buildings.some(b => b.type === type);
-        ui[info.btn].classList.toggle("unafford", !afford(info.cost) || taken);
+        const cost = buildCost(type);
+        ui[info.btn].classList.toggle("unafford", !afford(cost) || taken);
         ui[info.btn].classList.toggle("active", !!placement && placement.type === type);
+        const costEl = ui[info.btn].querySelector(".tcost");
+        const label = `${costStr(cost)} · ${info.perk}`;
+        if (costEl && costEl.textContent !== label) costEl.textContent = label;
     }
     for (const [type, info] of Object.entries(DECOR)) {
         ui[info.btn].classList.toggle("unafford", !afford(info.cost));
@@ -2434,6 +2615,8 @@ function update(dt) {
     hungry = villagers.length > 0 && resources.food <= 0.01;
     if (hungry && !wasHungry) notify("🍽️ The larder is empty — villagers are hungry and slow");
     else if (!hungry && wasHungry) notify("😊 Bellies are full again");
+
+    updateDevotion(sdt);
 
     // traveling merchant arrives every Nth day, then drifts off
     const dayNum = Math.floor(gameTime / DAY_LEN) + 1;
@@ -2710,6 +2893,22 @@ function draw(dt) {
     if (nightF > 0.02) {
         ctx.fillStyle = `rgba(24,34,76,${nightF * 0.32})`;
         ctx.fillRect(0, 0, W, H);
+        // shadows creep across unlit ground — lanterns & fires hold them back
+        if (nightF > 0.4) {
+            for (const wp of wisps) {
+                wp.x += wp.vx * dt; wp.y += wp.vy * dt;
+                wp.vx = clamp(wp.vx + Math.sin(vtime * 0.5 + wp.phase) * 3 * dt, -14, 14);
+                if (wp.x < -30) wp.x = W + 30; else if (wp.x > W + 30) wp.x = -30;
+                if (wp.y < horizonY + 30) wp.vy = Math.abs(wp.vy); else if (wp.y > H - 20) wp.vy = -Math.abs(wp.vy);
+                if (litAt(wp.x, wp.y)) continue;
+                const a = (nightF - 0.4) / 0.6 * 0.24;
+                const g = ctx.createRadialGradient(wp.x, wp.y, 2, wp.x, wp.y, wp.r);
+                g.addColorStop(0, `rgba(8,6,20,${a})`);
+                g.addColorStop(1, "rgba(8,6,20,0)");
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.ellipse(wp.x, wp.y, wp.r, wp.r * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+            }
+        }
         // warm window glow
         for (const b of buildings) {
             if (!b.complete || b.type !== "house") continue;
@@ -2799,6 +2998,83 @@ function draw(dt) {
 }
 
 // ================================================================
+//  SAVE / LOAD  (localStorage persistence)
+// ================================================================
+function serialize() {
+    return {
+        v: SAVE_VERSION, t: gameTime,
+        wood: resources.wood, stone: resources.stone, food: resources.food,
+        popCap, devotion, autoGrow, won, nextMerchantDay, buildTick, popTick,
+        nextEventIn, currentEvent, eventTimer, eventDur,
+        storage: { x: storage.x, y: storage.y },
+        nodes: resourcesNodes.map(r => ({ x: r.x, y: r.y, t: r.type, hp: r.hp, rs: r.respawn, rm: r.respawnMax })),
+        builds: buildings.map(b => ({ x: b.x, y: b.y, t: b.type, p: b.progress, c: b.complete, crop: b.crop })),
+        vill: villagers.map(v => ({ x: v.x, y: v.y, n: v.name, job: v.job, w: v.woodXP, s: v.stoneXP, f: v.farmXP,
+            tr: v.traits, skin: v.skin, shirt: v.shirt, hat: v.hat, sp: v.baseSpeed })),
+        props: props.map(p => ({ x: p.x, y: p.y, t: p.type })),
+        paths: [...pathCells.values()].map(c => ({ x: c.x, y: c.y })),
+    };
+}
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(serialize())); return true; } catch (e) { return false; } }
+function hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+
+function load() {
+    let data;
+    try { data = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return false; }
+    if (!data || data.v !== SAVE_VERSION) return false;
+    try {
+        villagers = []; resourcesNodes = []; buildings = []; floating = []; particles = []; props = [];
+        pathCells.clear();
+        resources = { wood: data.wood, stone: data.stone, food: data.food };
+        gameTime = data.t || 0;
+        popCap = data.popCap || 5;
+        devotion = data.devotion != null ? data.devotion : 60;
+        autoGrow = !!data.autoGrow;
+        won = !!data.won; fireworkTimer = 0;
+        nextMerchantDay = data.nextMerchantDay || (Math.floor(gameTime / DAY_LEN) + 1 + MERCHANT_EVERY);
+        buildTick = data.buildTick || 0; popTick = data.popTick || 0;
+        currentEvent = data.currentEvent || "None";
+        eventTimer = data.eventTimer || 0; eventDur = data.eventDur || 30;
+        nextEventIn = data.nextEventIn != null ? data.nextEventIn : rand(45, 70);
+        if (data.storage) { storage.x = clamp(data.storage.x, 90, W - 90); storage.y = H - 150; }
+        for (const r of data.nodes || []) {
+            const n = new Resource(r.x, r.y, r.t); n.hp = r.hp; n.respawn = r.rs || 0; n.respawnMax = r.rm || 1;
+            resourcesNodes.push(n);
+        }
+        for (const b of data.builds || []) {
+            const o = new Building(b.x, b.y, b.t); o.progress = b.p || 0; o.complete = !!b.c;
+            if (b.crop != null) o.crop = b.crop;
+            buildings.push(o);
+        }
+        for (const v of data.vill || []) {
+            const o = new Villager(v.x, v.y);
+            o.name = v.n; o.woodXP = v.w || 0; o.stoneXP = v.s || 0; o.farmXP = v.f || 0;
+            o.traits = Array.isArray(v.tr) ? v.tr : [];
+            if (v.skin) o.skin = v.skin;
+            if (v.sp) { o.baseSpeed = v.sp; o.speed = v.sp; }
+            if (v.hat !== undefined) o.hat = v.hat;
+            if (v.job) o.applyJob(v.job); else if (v.shirt) o.shirt = v.shirt;
+            o.state = "Idle"; o.target = null; o.carry = null;
+            villagers.push(o);
+        }
+        for (const p of data.props || []) props.push(new Prop(p.x, p.y, p.t));
+        for (const c of data.paths || []) {
+            const cx = Math.floor(c.x / PATH_CELL), cy = Math.floor(c.y / PATH_CELL);
+            pathCells.set(cellKey(cx, cy), { x: cx * PATH_CELL + PATH_CELL / 2, y: cy * PATH_CELL + PATH_CELL / 2, born: 0 });
+        }
+        merchant = null; closeMerchant(); placement = null; hungry = false;
+        dissentTimer = 0; lowFaithWarned = false;
+        rainAmt = harvestAmt = partyAmt = 0; isNight = false; nightGlow = 0;
+        seasonI = Math.floor(gameTime / SEASON_LEN) % 4;
+        seasonGrass = SEASONS[seasonI].grassRgb.slice();
+        seasonLeaf = SEASONS[seasonI].leafRgb.slice();
+        snowAmt = seasonI === 3 ? 1 : 0; respawnMult = SEASONS[seasonI].respawn; cropMult = SEASONS[seasonI].crop;
+        return true;
+    } catch (e) { return false; }
+}
+
+// ================================================================
 //  MAIN LOOP & BOOT
 // ================================================================
 let last = performance.now();
@@ -2815,8 +3091,16 @@ function loop(t) {
 }
 
 resize();
-reset();
-notify("👋 Welcome! Click trees & rocks, or pick a building below.");
+if (hasSave() && load()) {
+    notify("💾 Welcome back! Your kingdom was restored.");
+} else {
+    reset();
+    notify("👋 Welcome! Click trees & rocks, or pick a building below.");
+}
+// autosave periodically and when the tab is hidden/closed
+setInterval(save, 20000);
+addEventListener("beforeunload", save);
+addEventListener("visibilitychange", () => { if (document.hidden) save(); });
 requestAnimationFrame(loop);
 
 // small debug/testing handle
@@ -2844,9 +3128,16 @@ window.TK = {
     get won() { return won; },
     get isNight() { return isNight; },
     get trades() { return TRADES; },
+    get devotion() { return devotion; },
+    set devotion(v) { devotion = v; },
+    get litAt() { return litAt; },
+    get nightFor() { return nightFor; },
+    get storage() { return storage; },
+    get farmEfficiency() { return farmEfficiency(); },
     forceEvent: startEvent,
     setPlacement, placeBuilding, placeNature, placePath, placeDecor, reset,
     spawnMerchant, doTrade, openMerchant, closeMerchant,
+    serialize, save, load, hasSave, clearSave,
 };
 </script>
 </body>

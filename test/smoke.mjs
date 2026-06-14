@@ -62,6 +62,14 @@ globalThis.innerWidth = 1280;
 globalThis.innerHeight = 720;
 globalThis.devicePixelRatio = 1;
 
+// minimal localStorage so save/load can be exercised headlessly
+const _store = new Map();
+globalThis.localStorage = {
+    getItem(k) { return _store.has(k) ? _store.get(k) : null; },
+    setItem(k, v) { _store.set(k, String(v)); },
+    removeItem(k) { _store.delete(k); },
+};
+
 const globalListeners = {};
 globalThis.addEventListener = (t, f) => { (globalListeners[t] ??= []).push(f); };
 
@@ -336,6 +344,92 @@ check("path tool selected", TK.placement && TK.placement.type === "path");
     } else {
         check("finishing the monument wins the game", false, "no monument placed");
     }
+}
+
+// villager traits
+{
+    TK.reset();
+    check("villagers carry a traits array", TK.villagers.every(v => Array.isArray(v.traits)));
+    const v = TK.villagers[0];
+    v.traits = ["Strong"];
+    check("Strong works faster", v.traitWorkMult("tree") < 1);
+    v.traits = ["GreenThumb"];
+    check("Green Thumb farms faster only", v.traitWorkMult("farm") < 1 && v.traitWorkMult("tree") === 1);
+    const owl = { traits: ["NightOwl"], hasTrait(k) { return this.traits.includes(k); } };
+    const norm = { traits: [], hasTrait(k) { return this.traits.includes(k); } };
+    TK.time = 96;   // dusk (dayT 0.8)
+    check("Night Owls stay up at dusk", TK.nightFor(owl) === false && TK.nightFor(norm) === true);
+    TK.time = 106;  // deeper night (dayT ~0.88)
+    check("Night Owls rest deep in the night", TK.nightFor(owl) === true);
+}
+
+// nighttime light: lanterns hold the dark at bay
+{
+    TK.reset();
+    const s = TK.storage;
+    check("the barn casts light", TK.litAt(s.x, s.y) === true);
+    check("a far dark corner is unlit", TK.litAt(innerWidth - 8, 240) === false);
+    TK.resources.wood = 50;
+    TK.placeDecor("lantern", innerWidth - 120, 320);
+    check("a lantern lights its surroundings", TK.litAt(innerWidth - 120, 320) === true);
+}
+
+// devotion / faith meter
+{
+    TK.reset();
+    check("faith starts at 60", Math.round(TK.devotion) === 60);
+    TK.devotion = 50; TK.resources.food = 0;
+    TK.speed = 2; frames(2);
+    const d0 = TK.devotion;
+    frames(40);
+    check("hunger erodes faith", TK.devotion < d0, `${d0.toFixed(1)} -> ${TK.devotion.toFixed(1)}`);
+    // resting by warm light restores it
+    TK.reset();
+    TK.devotion = 40; TK.resources.food = 999;
+    TK.speed = 2;
+    for (let i = 0; i < 12; i++) { TK.time = 96; for (const vv of TK.villagers) vv.state = "Resting"; frames(10); }
+    check("resting by light restores faith", TK.devotion > 40, `dev=${TK.devotion.toFixed(1)}`);
+}
+
+// resource balancing: scaling build costs & diminishing farm returns
+{
+    TK.reset();
+    TK.nodes.length = 0;                 // clear scattered trees/rocks for clean spots
+    TK.resources.wood = 200; TK.resources.stone = 200;
+    const w0 = TK.resources.wood; check("1st house placed", TK.placeBuilding("house", 420, 300)); const c1 = w0 - TK.resources.wood;
+    const w1 = TK.resources.wood; check("2nd house placed", TK.placeBuilding("house", 560, 300)); const c2 = w1 - TK.resources.wood;
+    check("each building costs more than the last", c2 > c1, `${c1} then ${c2}`);
+
+    TK.reset();
+    TK.nodes.length = 0;
+    TK.resources.wood = 200;
+    TK.placeBuilding("farm", 400, 300); TK.buildings[TK.buildings.length - 1].complete = true;
+    const e1 = TK.farmEfficiency;
+    TK.placeBuilding("farm", 500, 360); TK.buildings[TK.buildings.length - 1].complete = true;
+    TK.placeBuilding("farm", 620, 300); TK.buildings[TK.buildings.length - 1].complete = true;
+    const e3 = TK.farmEfficiency;
+    check("more farms means diminishing returns", e1 === 1 && e3 < 1, `e1=${e1} e3=${e3.toFixed(2)}`);
+}
+
+// save / load round-trip
+{
+    TK.reset();
+    TK.nodes.length = 0;
+    TK.resources.wood = 90; TK.resources.stone = 40;       // enough to build first
+    check("lumber placed for save test", TK.placeBuilding("lumber", 420, 320));
+    TK.resources.wood = 77; TK.resources.stone = 33; TK.resources.food = 22; // set known values AFTER building
+    TK.devotion = 48; TK.time = 250;
+    TK.villagers[0].name = "Testbert";
+    check("save writes to storage", TK.save() === true && TK.hasSave());
+    TK.resources.wood = 0; TK.devotion = 99; TK.buildings.length = 0;
+    const okL = TK.load();
+    check("load restores resources", okL && TK.resources.wood === 77 && TK.resources.stone === 33 && TK.resources.food === 22);
+    check("load restores faith & time", Math.round(TK.devotion) === 48 && TK.time === 250);
+    check("load restores buildings", TK.buildings.some(b => b.type === "lumber"));
+    check("load restores villager names", TK.villagers.some(v => v.name === "Testbert"));
+    TK.clearSave();
+    check("clearing the save removes it", !TK.hasSave());
+    check("loading with no save is a no-op", TK.load() === false);
 }
 
 // pause / unpause
